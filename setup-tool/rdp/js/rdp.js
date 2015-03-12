@@ -2757,6 +2757,10 @@ function changeBuildingFloorChanged() {
 
 function showShapesForBuildingAndFloor(building, floor) {
 	debug("Showing shapes for building " + building + " and floor " + floor);
+	paperX = 999999;
+	paperY = 999999;
+	var lowerRightX = -999999;
+	var lowerRightY = -999999;
 	var showAllBuildings = (building == GlobalStrings.ALL_BUILDINGS);
 	buildingToFloorMap.forEach(function(bldg, floorToShapeListMap){
 		floorToShapeListMap.forEach(function(flr, shapeListAndNameMap){
@@ -2769,16 +2773,20 @@ function showShapesForBuildingAndFloor(building, floor) {
 					shape.hide();
 				}
 				
-				if(showAllBuildings) {
-					if (shape.data(GlobalStrings.ID) == "outline" && building == bldg && floor == flr) {
-						var bbox = shape.getBBox();
+				if (showAllBuildings || (building == bldg && floor == flr)) {
+					var bbox = shape.getBBox();
+					if (bbox.x < paperX) {
 						paperX = bbox.x;
-						paperY = bbox.y;
-						paper.setViewBox(paperX, paperY, paper.width, paper.height, false);
-						return false;
 					}
-				} else {
-					
+					if (bbox.y < paperY) {
+						paperY = bbox.y;
+					}
+					if (bbox.x2 > lowerRightX) {
+						lowerRightX = bbox.x2;
+					}
+					if (bbox.y2 > lowerRightY) {
+						lowerRightY = bbox.y2;
+					}
 				}
 
 			});
@@ -2791,6 +2799,8 @@ function showShapesForBuildingAndFloor(building, floor) {
 			});
 		});
 	});
+	
+	paper.setViewBox(paperX, paperY, paper.width, paper.height, false);
 	
 	executeOnAllMarkers(function(marker){
 		if(marker.data(GlobalStrings.TYPE) != GlobalStrings.PATHWAY) {
