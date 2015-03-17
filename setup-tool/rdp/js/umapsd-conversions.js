@@ -193,6 +193,7 @@ function createAllMarkersFromJson(json, paper) {
 								}
 								break;
 							}
+							return type;
 						}
 					}
 				} else {
