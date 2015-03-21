@@ -86,9 +86,14 @@ function displayPath(path){
 			}
 
 			switch(queue[2][4]){
-				case ("hw") : addDirection("temp; Continue " + (advanced === true?dir:"") + "down the hallway"); break;
-				case ("dr") : addDirection("temp; Go " + (advanced === true?dir:"") + "through the door"); break;
 				case ("rm") : addDirection("temp; Go " + (advanced === true?dir:"") + "through the room"); break;
+				case ("dr") : addDirection("temp; Go " + (advanced === true?dir:"") + "through the door"); break;
+				case ("hw") : addDirection("temp; Continue " + (advanced === true?dir:"") + "down the hallway"); break;
+				case ("pw") : addDirection("temp; Continue " + (advanced === true?dir:"") + "down the [pw]"); break;
+				case ("st") : addDirection("temp; Continue " + (advanced === true?dir:"") + "UPORDOWN? the stairwell"); break;
+				case ("ev") : addDirection("temp; Continue " + (advanced === true?dir:"") + "down the [ev]"); break;
+				case ("brm") : addDirection("temp; Continue " + (advanced === true?dir:"") + "down the [boysroom]"); break;
+				case ("brw") : addDirection("temp; Continue " + (advanced === true?dir:"") + "down the [girlsroom]"); break;
 				default : addDirection("error"); break;
 			}
 
