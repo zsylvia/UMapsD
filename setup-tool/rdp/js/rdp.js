@@ -9,128 +9,26 @@ Elevator: bldg_???_flr_???_el_???
 */
 
 var ROOM_TOOL_TIP_TEXT = "<b>Currently Plotting Rooms</b><br>" +
-    "Click inside an area to plot a marker for a room (e.g. Classroom, Office, etc.). Only one marker is needed for a room." +
+	"Click inside an area to plot a marker for a room (e.g. Classroom, Office, etc.). Only one marker is needed for a room." +
 	"<br><b>Tip:</b> Click as close to the center of the room as possible";
 var DOOR_TOOL_TIP_TEXT = "<b>Currently Plotting Doors</b><br>" +
-   "Click a location where a door is located to plot a marker for it.";
+	"Click a location where a door is located to plot a marker for it.";
 var HALLWAY_TOOL_TIP_TEXT = "<b>Currently Plotting Hallways</b><br>" +
-   "Click inside an area to plot a marker for a hallway inside of a building." +
+	"Click inside an area to plot a marker for a hallway inside of a building." +
 	"<br><b>Tip:</b> Plot markers in general areas around in front of doors and major sections of larger hallways.";
 var PATHWAY_TOOL_TIP_TEXT = "<b>Currently Plotting Pathways</b><br>" +
-   "Click a point outside of buildings to plot a marker for a pathway.";
+	"Click a point outside of buildings to plot a marker for a pathway.";
 var STAIR_TOOL_TIP_TEXT = "<b>Currently Plotting Stairs</b><br>" +
-   "Click inside an area to plot a marker for a staircase.";
+	"Click inside an area to plot a marker for a staircase.";
 var ELEVATOR_TOOL_TIP_TEXT = "<b>Currently Plotting Elevators</b><br>" +
-   "Click inside an area to plot a marker for an elevator.";
+	"Click inside an area to plot a marker for an elevator.";
 var BATHROOM_MENS_TOOL_TIP_TEXT = "<b>Currently Plotting Bathrooms (Men's)</b><br>" +
-   "Click inside an area to plot a marker for a men's bathroom.";
+	"Click inside an area to plot a marker for a men's bathroom.";
 var BATHROOM_WOMENS_TOOL_TIP_TEXT = "<b>Currently Plotting Bathrooms (Women's)</b><br>" +
-   "Click inside an area to plot a marker for a women's bathroom.";
+	"Click inside an area to plot a marker for a women's bathroom.";
 var MANUALLY_CONNECTING_MARKER_FROM = "Click on a marker to start a connection from. Or select \"Cancel Manual Connect\" to exit manual connecting mode";
 var MANUALLY_CONNECTING_MARKER_TO = "Click on another marker to make a connection. Or select \"Cancel Manual Connect\" to exit manual connecting mode";
 var REMOVE_MODE_TIP_TEXT = "You are in \"remove mode\". Click any marker or path to remove it.";
-
-var GlobalStrings = {
-	ID: "id",
-	TYPE: "type",
-	ALL_BUILDINGS: "all_buildings",
-	
-	FLOOR: "floor",
-	BUILDING: "building",
-	ROOM: "room",
-	DOOR: "door",
-	HALLWAY: "hallway",
-	PATHWAY: "pathway",
-	STAIR: "stair",
-	ELEVATOR: "elevator",
-	BATHROOM_MENS: "bathroom_mens",
-	BATHROOM_WOMENS: "bathroom_womens",
-	
-	FLOOR_DISPLAY: "Floor",
-	BUILDING_DISPLAY: "Building",
-	ROOM_DISPLAY: "Room",
-	DOOR_DISPLAY: "Door",
-	HALLWAY_DISPLAY: "Hallway",
-	PATHWAY_DISPLAY: "Pathway",
-	STAIR_DISPLAY: "Stair",
-	ELEVATOR_DISPLAY: "Elevator",
-	BATHROOM_MENS_DISPLAY: "Bathroom (Men's)",
-	BATHROOM_WOMENS_DISPLAY: "Bathroom (Women's)",
-	
-	COLOR: {
-		RED: "red",
-		BLUE: "blue",
-		ORANGE: "orange",
-		GREEN: "green",
-		PURPLE: "purple",
-		YELLOW: "yellow",
-		CYAN: "cyan",
-		PINK: "pink",
-		
-		RED_DISPLAY: "Red",
-		BLUE_DISPLAY: "Blue",
-		ORANGE_DISPLAY: "Orange",
-		GREEN_DISPLAY: "Green",
-		PURPLE_DISPLAY: "Purple",
-		YELLOW_DISPLAY: "Yellow",
-		CYAN_DISPLAY: "Cyan",
-		PINK_DISPLAY: "Pink",
-		
-		forEachStringPair: function(func) {
-			func(this.RED, this.RED_DISPLAY);
-			func(this.BLUE, this.BLUE_DISPLAY);
-			func(this.ORANGE, this.ORANGE_DISPLAY);
-			func(this.GREEN, this.GREEN_DISPLAY);
-			func(this.PURPLE, this.PURPLE_DISPLAY);
-			func(this.YELLOW, this.YELLOW_DISPLAY);
-			func(this.CYAN, this.CYAN_DISPLAY);
-			func(this.PINK, this.PINK_DISPLAY);
-		}
-	},
-	
-	
-	forEachStringPair: function(func) {
-		func(this.FLOOR, this.FLOOR_DISPLAY);
-		func(this.BUILDING, this.BUILDING_DISPLAY);
-		func(this.ROOM, this.ROOM_DISPLAY);
-		func(this.DOOR, this.DOOR_DISPLAY);
-		func(this.HALLWAY, this.HALLWAY_DISPLAY);
-		func(this.PATHWAY, this.PATHWAY_DISPLAY);
-		func(this.STAIR, this.STAIR_DISPLAY);
-		func(this.ELEVATOR, this.ELEVATOR_DISPLAY);
-		func(this.BATHROOM_MENS, this.BATHROOM_MENS_DISPLAY);
-		func(this.BATHROOM_WOMENS, this.BATHROOM_WOMENS_DISPLAY);
-		this.COLOR.forEachStringPair(func);
-	},
-	
-	forEachMarkerStringPair: function(func) {
-		this.forEachStringPair(function(normal, display){
-			if(normal != GlobalStrings.FLOOR && normal != GlobalStrings.BUILDING && !GlobalStrings.COLOR.hasOwnProperty(normal.toUpperCase())) {
-				func(normal, display);
-			}
-		});
-	},
-	
-	getNormalFromDisplay: function(displayString) {
-		var normalString = "";
-		this.forEachStringPair(function(normal, display){
-			if(displayString == display) {
-				normalString = normal;
-			}
-		});
-		return normalString;
-	},
-	
-	getDisplayFromNormal: function(normalString) {
-		var displayString = "";
-		this.forEachStringPair(function(normal, display){
-			if(normalString == normal) {
-				displayString = display;
-			}
-		});
-		return displayString;
-	}
-}
 
 var paper;
 var totalCenterX;
@@ -261,102 +159,7 @@ var markerFormShowing = false;
 var selectedMarkerType = GlobalStrings.ROOM;
 var changeBuildingFloorShowing = false;
 
-var statsOn = true;
-var debugOn = true;
-var infoOn = true;
-var warnOn = true;
-var errorOn = true;
-
-function stats(text) {
-	if(statsOn) {
-		if(stats.caller.name != "") {
-			console.log(consoleTag() + "STATS [" + stats.caller.name + "] - " + text);
-		} else {
-			console.log(consoleTag() + "STATS - " + text);
-		}
-	}
-}
-
-function debug(text) {
-	if (debugOn) {
-		if(debug.caller.name != "") {
-			console.log(consoleTag() + "DEBUG [" + debug.caller.name + "] - " + text);
-		} else {
-			console.log(consoleTag() + "DEBUG - " + text);
-		}
-	}
-}
-
-function info(text) {
-	if (infoOn) {
-		if(info.caller.name != "") {
-			console.log(consoleTag() + "INFO  [" + info.caller.name + "] - " + text);
-		} else {
-			console.log(consoleTag() + "INFO - " + text);
-		}
-	}
-}
-
-function warn(text){
-	if(warnOn) {
-		if(warn.caller.name != ""){
-			console.log(consoleTag() + "WARN  [" + warn.caller.name + "] - " + text);
-		}else{
-			console.log(consoleTag() +  "WARN - " + text);
-		}
-	}
-}
-
-function error(text){
-	if(errorOn) {
-		if(error.caller.name != ""){
-			console.log("%c" + consoleTag() + "ERROR [" + error.caller.name + "] - " + text, "color:red");
-		}else{
-			console.log("%c" + consoleTag() + "ERROR - " + text, "color:red");
-		}
-	}
-}
-
-function consoleTag() {
-	return formatTime(new Date().getTime()) + " ";
-}
-
-function formatTime(unixTimestamp) {
-	var dt = new Date(unixTimestamp);
-
-	var year = dt.getFullYear();
-	var month = dt.getMonth();
-	var day = dt.getDate();
-	var hours = dt.getHours();
-	var minutes = dt.getMinutes();
-	var seconds = dt.getSeconds();
-	var millis = dt.getMilliseconds();
-
-	// the above dt.get...() functions return a single digit
-	// so I prepend the zero here when needed
-	if (month < 10)
-		month = '0' + month;
-
-	if (day < 10)
-		day = '0' + day;
-
-	if (hours < 10)
-		hours = '0' + hours;
-
-	if (minutes < 10)
-		minutes = '0' + minutes;
-
-	if (seconds < 10)
-		seconds = '0' + seconds;
-
-	if (millis < 100) {
-		if (millis < 10)
-			millis = '0' + millis;
-		millis = '0' + millis;
-	}
-
-	return year + "-" + month + "-" + day + " " + hours + ":" + minutes + ":" + seconds + "." + millis;
-}
+var LOG = new Logger(LoggingLevel.ALL);
 
 function Connection(marker, distance) {
 	this.marker = marker;
@@ -519,7 +322,7 @@ function Command() {
 					break;
 			}
 		} else {
-			error("Cannot undo action. The ActionType is null!");
+			LOG.error("Cannot undo action. The ActionType is null!");
 		}
 		addToUndoStack = true;
 	}
@@ -585,7 +388,7 @@ function Command() {
 					break;
 			}
 		} else {
-			error("Cannot redo action. The ActionType is null!");
+			LOG.error("Cannot redo action. The ActionType is null!");
 		}
 		addToUndoStack = true;
 	}
@@ -594,8 +397,8 @@ function Command() {
 $(document).ready(function() {
 	var start = new Date().getTime();
 
-	$("#raphael").css("height", $(window).height()-$("#body").height());
-	
+	$("#raphael").css("height", $(window).height() - $("#body").height());
+
 	Raphael("raphael", $("#raphael").width(), $("#raphael").height(),
 		function() {
 			paper = this;
@@ -605,26 +408,31 @@ $(document).ready(function() {
 
 			var shapesCount = 0;
 
-			for(var i = 0; i < dictionary.buildings.length; i++) {
+			for (var i = 0; i < dictionary.buildings.length; i++) {
 				shortToLongNameMap.set(dictionary.buildings[i].short_id, dictionary.buildings[i].full_id);
 				var floorToShapeListAndNameMap = buildingToFloorMap.get(dictionary.buildings[i].short_id);
-				if(floorToShapeListAndNameMap == null) {
+				if (floorToShapeListAndNameMap == null) {
 					floorToShapeListAndNameMap = new buckets.Dictionary();
 				}
-				for(var j = 0; j < dictionary.buildings[i].floors.length; j++) {
+				for (var j = 0; j < dictionary.buildings[i].floors.length; j++) {
 					var shapeListAndNameMap = floorToShapeListAndNameMap.get(dictionary.buildings[i].floors[j].id);
-					if(shapeListAndNameMap == null) {
+					if (shapeListAndNameMap == null) {
 						shapeListAndNameMap = new buckets.Dictionary();
 					}
 					var shapeList = shapeListAndNameMap.get("shapes");
-					if(shapeList == null) {
-						shapeList = new buckets.LinkedList(function(shape){
+					if (shapeList == null) {
+						shapeList = new buckets.LinkedList(function(shape) {
 							return shape.data(GlobalStrings.ID);
 						});
 					}
-					for(var k = 0; k < dictionary.buildings[i].floors[j].shapes.length; k++) {
+					for (var k = 0; k < dictionary.buildings[i].floors[j].shapes.length; k++) {
 						var shape = dictionary.buildings[i].floors[j].shapes[k];
 						var path = paper.path(shape.path).data(GlobalStrings.ID, shape.id);
+						if (idIsType(shape.id, GlobalStrings.ROOM) || idIsType(shape.id, GlobalStrings.BATHROOM_MENS) || idIsType(shape.id, GlobalStrings.BATHROOM_WOMENS)) {
+							// path.attr({fill: "#0a2871", "fill-opacity": .5});
+						} else if (shape.id == "outline") {
+							// path.attr({fill: "#fddcac", "fill-opacity": .5});
+						}
 						allElementsSet.push(path);
 						shapeList.add(path);
 					}
@@ -635,19 +443,19 @@ $(document).ready(function() {
 			}
 
 			paper.setFinish();
-			
+
 			paperWidth = paper.width;
 			paperHeight = paper.height;
-			
-			raphaelSetup();
-			
-			paper.forEach(function(el) {
-				el.scale(paperResizeRatio, paperResizeRatio, (paper.width/2), (paper.height/2));
-			});
-			
 
-			
-			stats("Took " + (new Date().getTime() - start) + " ms to setup raphael");
+			raphaelSetup();
+
+			paper.forEach(function(el) {
+				el.scale(paperResizeRatio, paperResizeRatio, (paper.width / 2), (paper.height / 2));
+			});
+
+
+
+			LOG.trace("Took " + (new Date().getTime() - start) + " ms to setup raphael");
 		});
 
 	//Initally have room button clicked and show tool tip
@@ -662,34 +470,34 @@ $(document).ready(function() {
 		placement: "bottom",
 		html: true
 	});
-	
-	$("#graph_input").change(function(event){
+
+	$("#graph_input").change(function(event) {
 		var file = event.target.files[0];
-		
+
 		var reader = new FileReader();
-		
+
 		reader.onload = function(readFile) {
 			loadGraphData(readFile.target.result);
 		}
-		
+
 		reader.readAsText(file);
 	});
-	
-	
+
+
 	var mouseDown = false;
 	var currX;
 	var currY;
-	$("#raphael").mousedown(function(event){
+	$("#raphael").mousedown(function(event) {
 		currX = event.offsetX;
 		currY = event.offsetY;
 		mouseDown = true;
 	});
-	$("#raphael").mousemove(function(event){
-		if(mouseDown && !mouseOnMarker) {
+	$("#raphael").mousemove(function(event) {
+		if (mouseDown && !mouseOnMarker) {
 			paperX = paperX + (currX - event.offsetX);
 			paperY = paperY + (currY - event.offsetY);
-			paperShiftX = paperX;
-			paperShiftY = paperY;
+			paperShiftX = Math.floor(paperX);
+			paperShiftY = Math.floor(paperY);
 			currX = event.offsetX;
 			currY = event.offsetY;
 			paperWidth = paper.width;
@@ -699,63 +507,63 @@ $(document).ready(function() {
 			draggingEverythingIgnoreClick = true;
 		}
 	});
-	$("#raphael").mouseup(function(event){
-		if(mouseDown) {
+	$("#raphael").mouseup(function(event) {
+		if (mouseDown) {
 			mouseDown = false;
 		}
 	});
-	
+
 	//Firefox
 	$('#raphael').bind('DOMMouseScroll', function(e) {
 		var resizeRatio;
-        if(e.originalEvent.detail < 0) {
-            //scroll down / zoom out 10%
-            resizeRatio = .90;
+		if (e.originalEvent.detail < 0) {
+			//scroll down / zoom out 10%
+			resizeRatio = .90;
 			paperResizeRatio = paperResizeRatio - .1;
-        }else {
-            //scroll up / zoom in 10%
-            resizeRatio = 1.1;
+		} else {
+			//scroll up / zoom in 10%
+			resizeRatio = 1.1;
 			paperResizeRatio = paperResizeRatio + .1;
-        }
-		
-		paper.forEach(function(el){
-			el.scale(resizeRatio, resizeRatio, (paper.width/2), (paper.height/2));
+		}
+
+		paper.forEach(function(el) {
+			el.scale(resizeRatio, resizeRatio, (paper.width / 2), (paper.height / 2));
 		});
 
-		paperWidth = paperWidth*resizeRatio;
-		paperHeight = paperHeight*resizeRatio;
+		paperWidth = paperWidth * resizeRatio;
+		paperHeight = paperHeight * resizeRatio;
 
 		// paper.setViewBox(paperShiftX, paperShiftY, paperWidth, paperHeight, true);
-		
-        //prevent page fom scrolling
-        return false;
-    });
 
-    //IE, Opera, Safari
-    $('#raphael').bind('mousewheel', function(e){
+		//prevent page fom scrolling
+		return false;
+	});
+
+	//IE, Opera, Safari
+	$('#raphael').bind('mousewheel', function(e) {
 		var resizeRatio;
-        if(e.originalEvent.wheelDelta < 0) {
-            //scroll down / zoom out 10%
-            resizeRatio = .90;
+		if (e.originalEvent.wheelDelta < 0) {
+			//scroll down / zoom out 10%
+			resizeRatio = .90;
 			paperResizeRatio = paperResizeRatio - .1;
-        }else {
-            //scroll up / zoom in 10%
-            resizeRatio = 1.1;
+		} else {
+			//scroll up / zoom in 10%
+			resizeRatio = 1.1;
 			paperResizeRatio = paperResizeRatio + .1;
-        }
-		
-		paper.forEach(function(el){
-			el.scale(resizeRatio, resizeRatio, (paper.width/2), (paper.height/2));
+		}
+
+		paper.forEach(function(el) {
+			el.scale(resizeRatio, resizeRatio, (paper.width / 2), (paper.height / 2));
 		});
 
-		paperWidth = paperWidth*resizeRatio;
-		paperHeight = paperHeight*resizeRatio;
+		paperWidth = paperWidth * resizeRatio;
+		paperHeight = paperHeight * resizeRatio;
 
 		// paper.setViewBox(paperShiftX, paperShiftY, paperWidth, paperHeight, true);
-		
-        //prevent page fom scrolling
-        return false;
-    });
+
+		//prevent page fom scrolling
+		return false;
+	});
 });
 
 function raphaelSetup() {
@@ -767,19 +575,19 @@ function raphaelSetup() {
 	var rightmostBottomRightX = 0;
 	var rightmostBottomRightY = 0;
 	var rightmostEl;
-	
-	buildingToFloorMap.forEach(function(building, floorToShapeListAndNameMap){
-		floorToShapeListAndNameMap.forEach(function(floor, shapeListAndNameMap){
+
+	buildingToFloorMap.forEach(function(building, floorToShapeListAndNameMap) {
+		floorToShapeListAndNameMap.forEach(function(floor, shapeListAndNameMap) {
 			var nameList = shapeListAndNameMap.get("names");
-			if(nameList == null) {
+			if (nameList == null) {
 				nameList = new buckets.LinkedList();
 			}
-			shapeListAndNameMap.get("shapes").forEach(function(shape){
+			shapeListAndNameMap.get("shapes").forEach(function(shape) {
 				var id = shape.data(GlobalStrings.ID);
 				var bbox = shape.getBBox();
 				var centerX = bbox.x + (bbox.width / 2);
 				var centerY = bbox.y + (bbox.height / 2);
-				
+
 				nameList.add(paper.text(centerX, centerY, id).attr("font-size", 4));
 
 				if (id == "outline" && building == "dion" && floor == "1") {
@@ -802,9 +610,9 @@ function raphaelSetup() {
 			shapeListAndNameMap.set("names", nameList);
 		});
 	});
-	
-	var resizeRatioX = Math.abs((paper.width-rightmostBottomRightX)/rightmostBottomRightX);
-	var resizeRatioY = Math.abs((paper.height-rightmostBottomRightY)/rightmostBottomRightY);
+
+	var resizeRatioX = Math.abs((paper.width - rightmostBottomRightX) / rightmostBottomRightX);
+	var resizeRatioY = Math.abs((paper.height - rightmostBottomRightY) / rightmostBottomRightY);
 
 	// paper.forEach(function(el) {
 	// 	var bbox = el.getBBox();
@@ -823,27 +631,27 @@ function raphaelSetup() {
 	// 	// el.translate(-1200, -100);
 	// 	// el.translate(165, 50);
 	// });
-	
+
 	// var json = "{\"paths\":[{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2660_\",\"x\":2277.0362416124826,\"y\":507.3970000000001},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_16\",\"x\":2334.0362416124826,\"y\":456.3970000000001},\"d\":76},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2661_\",\"x\":2373.397,\"y\":466.39700000000016},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_9\",\"x\":2373.397,\"y\":507.39700000000016},\"d\":38},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2681_\",\"x\":2471.0362416124826,\"y\":510.3970000000001},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_17\",\"x\":2415.0362416124826,\"y\":456.3970000000001},\"d\":77},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2662_\",\"x\":2569.0362416124826,\"y\":475.3970000000001},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_10\",\"x\":2569.0362416124826,\"y\":504.3970000000001},\"d\":29},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2676_\",\"x\":2650.0362416124826,\"y\":507.3970000000001},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_21\",\"x\":2611.0362416124826,\"y\":459.3970000000001},\"d\":61},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2675_\",\"x\":2712.0362416124826,\"y\":475.3970000000001},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_48\",\"x\":2723.0362416124826,\"y\":459.3970000000001},\"d\":19},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_3069_\",\"x\":2748.0362416124826,\"y\":473.3970000000001},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_47\",\"x\":2768.0362416124826,\"y\":453.3970000000001},\"d\":28},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_3070_\",\"x\":2780.0362416124826,\"y\":473.3970000000001},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_46\",\"x\":2794.0362416124826,\"y\":456.3970000000001},\"d\":22},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2673_\",\"x\":2824.0362416124826,\"y\":704.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_31\",\"x\":2757.0362416124826,\"y\":658.3970000000002},\"d\":81},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2670_\",\"x\":2729.397,\"y\":742.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_28\",\"x\":2730.397,\"y\":707.3970000000002},\"d\":38},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2669_\",\"x\":2629.0362416124826,\"y\":706.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_23\",\"x\":2564.0362416124826,\"y\":655.3970000000002},\"d\":82},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2666_\",\"x\":2534.0362416124826,\"y\":736.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_22\",\"x\":2535.0362416124826,\"y\":703.3970000000002},\"d\":33},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2665_\",\"x\":2439.0362416124826,\"y\":712.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_13\",\"x\":2509.0362416124826,\"y\":657.3970000000002},\"d\":89},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2710_\",\"x\":2275.0362416124826,\"y\":669.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_6\",\"x\":2255.0362416124826,\"y\":618.3970000000002},\"d\":52},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2709_\",\"x\":2220.0362416124826,\"y\":670.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_5\",\"x\":2231.0362416124826,\"y\":618.3970000000002},\"d\":53},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2689_\",\"x\":3126.0362416124826,\"y\":408.3970000000001},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_42\",\"x\":3117.0362416124826,\"y\":425.3970000000001},\"d\":19},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2688_\",\"x\":3046.0362416124826,\"y\":474.3970000000001},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_42\"},\"d\":86},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2686_\",\"x\":3075.0362416124826,\"y\":695.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_41\",\"x\":3142.0362416124826,\"y\":756.3970000000002},\"d\":90},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2690_\",\"x\":3154.0362416124826,\"y\":765.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_41\"},\"d\":15},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2691_\",\"x\":2423.0362416124826,\"y\":622.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_15\",\"x\":2403.0362416124826,\"y\":621.3970000000002},\"d\":20},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2692_\",\"x\":2460.0362416124826,\"y\":622.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_14\",\"x\":2475.0362416124826,\"y\":620.3970000000002},\"d\":14},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2678_\",\"x\":2646.0362416124826,\"y\":585.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_24\",\"x\":2630.0362416124826,\"y\":591.3970000000002},\"d\":17},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2677_\",\"x\":2679.0362416124826,\"y\":583.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_25\",\"x\":2702.0362416124826,\"y\":584.3970000000002},\"d\":23},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_1\",\"x\":2418.397,\"y\":598.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_4\",\"x\":2368.397,\"y\":595.3970000000002},\"d\":49},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_2\",\"x\":2004.0362416124824,\"y\":601.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_1\",\"x\":2041.0362416124824,\"y\":601.3970000000002},\"d\":37},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_3\",\"x\":2047.0362416124824,\"y\":637.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_1\"},\"d\":36},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_4\",\"x\":2134.0362416124826,\"y\":575.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_2\",\"x\":2126.0362416124826,\"y\":601.3970000000002},\"d\":27},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_5\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_3\",\"x\":2246.397,\"y\":597.3970000000002},\"d\":26},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_6\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_3\"},\"d\":29},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_7\",\"x\":2345.397,\"y\":555.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_4\"},\"d\":38},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_8\",\"x\":2403.397,\"y\":556.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_4\"},\"d\":47},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_11\",\"x\":2543.0362416124826,\"y\":554.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_6\",\"x\":2551.0362416124826,\"y\":607.3970000000002},\"d\":53},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_12\",\"x\":2595.0362416124826,\"y\":553.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_6\"},\"d\":69},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_13\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_6\"},\"d\":65},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_14\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_6\"},\"d\":77},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_15\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_4\"},\"d\":47},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_18\",\"x\":2343.0362416124826,\"y\":638.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_5\",\"x\":2342.0362416124826,\"y\":655.3970000000002},\"d\":17},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_19\",\"x\":2340.0362416124826,\"y\":673.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_5\"},\"d\":18},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_20\",\"x\":2527.0362416124826,\"y\":457.3970000000001},\"m2\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2662_\"},\"d\":45},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_23\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_6\"},\"d\":49},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_25\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_7\",\"x\":2733.0362416124826,\"y\":614.3970000000002},\"d\":43},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_26\",\"x\":2685.0362416124826,\"y\":609.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_7\"},\"d\":48},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_27\",\"x\":2702.0362416124826,\"y\":656.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_7\"},\"d\":52},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_29\",\"x\":2741.0362416124826,\"y\":577.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_7\"},\"d\":37},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_30\",\"x\":2785.0362416124826,\"y\":576.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_7\"},\"d\":64},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_31\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_7\"},\"d\":50},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_32\",\"x\":2894.0362416124826,\"y\":605.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_10\",\"x\":2934.0362416124826,\"y\":608.3970000000002},\"d\":40},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_33\",\"x\":2918.0362416124826,\"y\":665.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_10\"},\"d\":59},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_34\",\"x\":2960.0362416124826,\"y\":658.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_10\"},\"d\":56},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_36\",\"x\":2937.0362416124826,\"y\":549.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_10\"},\"d\":59},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_38\",\"x\":3161.0362416124826,\"y\":563.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_12\",\"x\":3186.0362416124826,\"y\":578.3970000000002},\"d\":29},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_39\",\"x\":3190.0362416124826,\"y\":551.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_12\"},\"d\":27},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_40\",\"x\":3189.0362416124826,\"y\":605.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_12\"},\"d\":27},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_43\",\"x\":2915.0362416124826,\"y\":433.3970000000001},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_9\",\"x\":2854.0362416124826,\"y\":451.3970000000001},\"d\":63},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_45\",\"x\":2803.0362416124826,\"y\":435.3970000000001},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_9\"},\"d\":53},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_46\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_9\"},\"d\":60},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_49\",\"x\":2699.0362416124826,\"y\":454.3970000000001},\"m2\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2675_\"},\"d\":24},{\"m1\":{\"id\":\"bldg_dion_flr_1_hw_8\",\"x\":2850.0362416124826,\"y\":600.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_32\"},\"d\":44},{\"m1\":{\"id\":\"bldg_dion_flr_1_el_1\",\"x\":2972.0362416124826,\"y\":559.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_10\"},\"d\":62},{\"m1\":{\"id\":\"bldg_dion_flr_1_bathroom_mens_1\",\"x\":2787.0362416124826,\"y\":536.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_30\"},\"d\":40},{\"m1\":{\"id\":\"bldg_dion_flr_1_bathroom_womens_1\",\"x\":2737.0362416124826,\"y\":537.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_29\"},\"d\":40},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_44\",\"x\":2784.0362416124826,\"y\":416.3970000000001},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_13\",\"x\":2793.0362416124826,\"y\":426.3970000000001},\"d\":13},{\"m1\":{\"id\":\"bldg_dion_flr_1_hw_13\"},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_45\"},\"d\":13},{\"m1\":{\"id\":\"bldg_dion_flr_1_hw_1\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_2\"},\"d\":85},{\"m1\":{\"id\":\"bldg_dion_flr_1_hw_2\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_3\"},\"d\":116},{\"m1\":{\"id\":\"bldg_dion_flr_1_hw_3\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_4\"},\"d\":127},{\"m1\":{\"id\":\"bldg_dion_flr_1_hw_4\"},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_18\"},\"d\":56},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2660_\"},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_7\"},\"d\":87},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_16\"},\"m2\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2661_\"},\"d\":40},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_9\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_4\"},\"d\":84},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_8\"},\"m2\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2681_\"},\"d\":82},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_17\"},\"m2\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2661_\"},\"d\":41},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2681_\"},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_20\"},\"d\":77},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2662_\"},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_21\"},\"d\":44},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_10\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_6\"},\"d\":104},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_11\"},\"m2\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2681_\"},\"d\":84},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_12\"},\"m2\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2676_\"},\"d\":71},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_24\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_6\"},\"d\":80},{\"m1\":{\"id\":\"bldg_dion_flr_1_hw_6\"},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_26\"},\"d\":134},{\"m1\":{\"id\":\"bldg_dion_flr_1_hw_6\"},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_1\"},\"d\":133},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_22\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_6\"},\"d\":97},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2676_\"},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_49\"},\"d\":72},{\"m1\":{\"id\":\"bldg_dion_flr_1_hw_7\"},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_28\"},\"d\":89},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_27\"},\"m2\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2669_\"},\"d\":88},{\"m1\":{\"id\":\"bldg_dion_flr_1_hw_7\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_8\"},\"d\":117},{\"m1\":{\"id\":\"bldg_dion_flr_1_hw_9\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_8\"},\"d\":149},{\"m1\":{\"id\":\"bldg_dion_flr_1_hw_8\"},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_37\",\"x\":2921.0362416124826,\"y\":532.3970000000002},\"d\":98},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_36\"},\"m2\":{\"id\":\"bldg_dion_flr_1_st_1\",\"x\":2933.397,\"y\":495.39700000000016},\"d\":51},{\"m1\":{\"id\":\"bldg_dion_flr_1_st_1\"},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_37\"},\"d\":36},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_43\"},\"m2\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2688_\"},\"d\":137},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_35\",\"x\":3017.0362416124826,\"y\":600.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_10\"},\"d\":83},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_34\"},\"m2\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2686_\"},\"d\":120},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_35\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_11\",\"x\":3105.0362416124826,\"y\":583.3970000000002},\"d\":89},{\"m1\":{\"id\":\"bldg_dion_flr_1_hw_11\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_12\"},\"d\":81},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_40\"},\"m2\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2686_\"},\"d\":145},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_38\"},\"m2\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2688_\"},\"d\":145},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_48\"},\"m2\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_3069_\"},\"d\":28},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_47\"},\"m2\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_3070_\"},\"d\":23}],\"markers\":[]}";
 	// loadGraphData(json);
-	
+
 	showShapesForCurrentBuildingAndFloor();
 }
 
 function setMarkerDragEventHandlers(marker) {
-	marker.drag(function(dx, dy, x, y, event){
-		if(marker.isVisible()) {
+	marker.drag(function(dx, dy, x, y, event) {
+		if (marker.isVisible()) {
 			markerDragEventMove(marker, dx, dy, x, y, event);
 			draggingMarkerIgnoreClick = true;
 		}
-	}, function(x, y, event){
-		if(marker.isVisible()) {
+	}, function(x, y, event) {
+		if (marker.isVisible()) {
 			// Drag start
 			mouseOnMarker = true;
 			markerDragEventStart(marker, x, y, event);
 		}
-	}, function(event){
-		if(marker.isVisible()) {
+	}, function(event) {
+		if (marker.isVisible()) {
 			// Drag end
 			mouseOnMarker = false;
 			markerDragEventEnd(marker, event);
@@ -853,43 +661,43 @@ function setMarkerDragEventHandlers(marker) {
 
 function loadGraphData(json) {
 	var markerMap = createAllMarkersFromJson(json, paper);
-	
+
 	markerMap.forEach(function(markerId, marker) {
 		setMarkerDragEventHandlers(marker);
-		
+
 		getMarkerMapForType(marker.data(GlobalStrings.TYPE)).set(marker.data(GlobalStrings.ID), marker);
-		
+
 		typeToConnectionMap.get(marker.data(GlobalStrings.TYPE)).set(marker, newConnectionSet());
-		
-		if(marker.data(GlobalStrings.TYPE) == GlobalStrings.DOOR){
+
+		if (marker.data(GlobalStrings.TYPE) == GlobalStrings.DOOR) {
 			doorIdCount++;
-		} else if(marker.data(GlobalStrings.TYPE) == GlobalStrings.HALLWAY) {
+		} else if (marker.data(GlobalStrings.TYPE) == GlobalStrings.HALLWAY) {
 			hallwayIdCount++;
-		} else if(marker.data(GlobalStrings.TYPE) == GlobalStrings.PATHWAY) {
+		} else if (marker.data(GlobalStrings.TYPE) == GlobalStrings.PATHWAY) {
 			pathwayIdCount++;
-		} else if(marker.data(GlobalStrings.TYPE) == GlobalStrings.STAIR) {
+		} else if (marker.data(GlobalStrings.TYPE) == GlobalStrings.STAIR) {
 			stairIdCount++;
-		} else if(marker.data(GlobalStrings.TYPE) == GlobalStrings.ELEVATOR) {
+		} else if (marker.data(GlobalStrings.TYPE) == GlobalStrings.ELEVATOR) {
 			elevatorIdCount++;
-		} else if(marker.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_MENS) {
+		} else if (marker.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_MENS) {
 			bathroomMensIdCount++;
-		} else if(marker.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_WOMENS) {
+		} else if (marker.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_WOMENS) {
 			bathroomWomensIdCount++;
 		}
 	});
-	
-	createAllPathsFromJson(json, paper).forEach(function(pathString, path){
+
+	createAllPathsFromJson(json, paper).forEach(function(pathString, path) {
 		pathMap.set(pathString, path);
 	});
 
 	pathMap.forEach(function(pathString, path) {
 		var marker1 = getMarkerFromId(path.marker1Data.id);
-		if(marker1 == null) {
+		if (marker1 == null) {
 			marker1 = addMarker(path.marker1Data.cx, path.marker1Data.cy, markerTypeToColorMap.get(path.marker1Data.type));
-			marker1.data(GlobalStrings.ID, path.marker1Data.id);	
-			if(path.marker1Data.type == GlobalStrings.ROOM || path.marker1Data.type == GlobalStrings.BATHROOM_MENS || path.marker1Data.type == GlobalStrings.BATHROOM_WOMENS) {
-				buildingToFloorMap.get(path.marker1Data.building).get(path.marker1Data.floor).get("shapes").forEach(function(element){
-					if(element.data(GlobalStrings.ID) != "outline" && element.isPointInside(marker1.attr("cx"), marker1.attr("cy"))) {
+			marker1.data(GlobalStrings.ID, path.marker1Data.id);
+			if (path.marker1Data.type == GlobalStrings.ROOM || path.marker1Data.type == GlobalStrings.BATHROOM_MENS || path.marker1Data.type == GlobalStrings.BATHROOM_WOMENS) {
+				buildingToFloorMap.get(path.marker1Data.building).get(path.marker1Data.floor).get("shapes").forEach(function(element) {
+					if (element.data(GlobalStrings.ID) != "outline" && element.isPointInside(marker1.attr("cx"), marker1.attr("cy"))) {
 						marker1.data(GlobalStrings.ID, element.data(GlobalStrings.ID));
 						path.marker1Data.id = marker1.data(GlobalStrings.ID);
 						return false;
@@ -897,38 +705,38 @@ function loadGraphData(json) {
 				});
 			}
 			marker1.data(GlobalStrings.TYPE, path.marker1Data.type);
-			if(path.marker1Data.type != GlobalStrings.PATHWAY) {
+			if (path.marker1Data.type != GlobalStrings.PATHWAY) {
 				marker1.data(GlobalStrings.BUILDING, path.marker1Data.building);
 				marker1.data(GlobalStrings.FLOOR, path.marker1Data.floor);
 			}
 			getMarkerMapForType(marker1.data(GlobalStrings.TYPE)).set(marker1.data(GlobalStrings.ID), marker1);
-		
+
 			typeToConnectionMap.get(marker1.data(GlobalStrings.TYPE)).set(marker1, newConnectionSet());
-		
-			if(marker1.data(GlobalStrings.TYPE) == GlobalStrings.DOOR){
+
+			if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.DOOR) {
 				doorIdCount++;
-			} else if(marker1.data(GlobalStrings.TYPE) == GlobalStrings.HALLWAY) {
+			} else if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.HALLWAY) {
 				hallwayIdCount++;
-			} else if(marker1.data(GlobalStrings.TYPE) == GlobalStrings.PATHWAY) {
+			} else if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.PATHWAY) {
 				pathwayIdCount++;
-			} else if(marker1.data(GlobalStrings.TYPE) == GlobalStrings.STAIR) {
+			} else if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.STAIR) {
 				stairIdCount++;
-			} else if(marker1.data(GlobalStrings.TYPE) == GlobalStrings.ELEVATOR) {
+			} else if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.ELEVATOR) {
 				elevatorIdCount++;
-			} else if(marker1.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_MENS) {
+			} else if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_MENS) {
 				bathroomMensIdCount++;
-			} else if(marker1.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_WOMENS) {
+			} else if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_WOMENS) {
 				bathroomWomensIdCount++;
 			}
 		}
 		var marker2 = getMarkerFromId(path.marker2Data.id);
-		if(marker2 == null) {
+		if (marker2 == null) {
 			marker2 = addMarker(path.marker2Data.cx, path.marker2Data.cy, markerTypeToColorMap.get(path.marker2Data.type));
 			marker2.data(GlobalStrings.ID, path.marker2Data.id);
-			marker2.data(GlobalStrings.ID, path.marker2Data.id);	
-			if(path.marker2Data.type == GlobalStrings.ROOM || path.marker2Data.type == GlobalStrings.BATHROOM_MENS || path.marker2Data.type == GlobalStrings.BATHROOM_WOMENS) {
-				buildingToFloorMap.get(path.marker2Data.building).get(path.marker2Data.floor).get("shapes").forEach(function(element){
-					if(element.data(GlobalStrings.ID) != "outline" && element.isPointInside(marker2.attr("cx"), marker2.attr("cy"))) {
+			marker2.data(GlobalStrings.ID, path.marker2Data.id);
+			if (path.marker2Data.type == GlobalStrings.ROOM || path.marker2Data.type == GlobalStrings.BATHROOM_MENS || path.marker2Data.type == GlobalStrings.BATHROOM_WOMENS) {
+				buildingToFloorMap.get(path.marker2Data.building).get(path.marker2Data.floor).get("shapes").forEach(function(element) {
+					if (element.data(GlobalStrings.ID) != "outline" && element.isPointInside(marker2.attr("cx"), marker2.attr("cy"))) {
 						marker2.data(GlobalStrings.ID, element.data(GlobalStrings.ID));
 						path.marker2Data.id = marker2.data(GlobalStrings.ID);
 						return false;
@@ -936,27 +744,27 @@ function loadGraphData(json) {
 				});
 			}
 			marker2.data(GlobalStrings.TYPE, path.marker2Data.type);
-			if(path.marker2Data.type != GlobalStrings.PATHWAY) {
+			if (path.marker2Data.type != GlobalStrings.PATHWAY) {
 				marker2.data(GlobalStrings.BUILDING, path.marker2Data.building);
 				marker2.data(GlobalStrings.FLOOR, path.marker2Data.floor);
 			}
 			getMarkerMapForType(marker2.data(GlobalStrings.TYPE)).set(marker2.data(GlobalStrings.ID), marker2);
-		
+
 			typeToConnectionMap.get(marker2.data(GlobalStrings.TYPE)).set(marker2, newConnectionSet());
-		
-			if(marker2.data(GlobalStrings.TYPE) == GlobalStrings.DOOR){
+
+			if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.DOOR) {
 				doorIdCount++;
-			} else if(marker2.data(GlobalStrings.TYPE) == GlobalStrings.HALLWAY) {
+			} else if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.HALLWAY) {
 				hallwayIdCount++;
-			} else if(marker2.data(GlobalStrings.TYPE) == GlobalStrings.PATHWAY) {
+			} else if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.PATHWAY) {
 				pathwayIdCount++;
-			} else if(marker2.data(GlobalStrings.TYPE) == GlobalStrings.STAIR) {
+			} else if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.STAIR) {
 				stairIdCount++;
-			} else if(marker2.data(GlobalStrings.TYPE) == GlobalStrings.ELEVATOR) {
+			} else if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.ELEVATOR) {
 				elevatorIdCount++;
-			} else if(marker2.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_MENS) {
+			} else if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_MENS) {
 				bathroomMensIdCount++;
-			} else if(marker2.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_WOMENS) {
+			} else if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_WOMENS) {
 				bathroomWomensIdCount++;
 			}
 		}
@@ -985,6 +793,9 @@ function loadGraphData(json) {
 		if (success) {
 			marker2ConnectionMap.set(marker2, connectionSet);
 		}
+
+		marker1.toFront();
+		marker2.toFront();
 	});
 
 	generateGraph();
@@ -997,25 +808,28 @@ function markerDragEventStart(marker, x, y, event) {
 }
 
 function markerDragEventMove(marker, dx, dy, x, y, event) {
-	marker.attr({cx: (marker.data("drag_start_cx")+dx), cy: (marker.data("drag_start_cy")+dy)});
-	
+	marker.attr({
+		cx: (marker.data("drag_start_cx") + dx),
+		cy: (marker.data("drag_start_cy") + dy)
+	});
+
 	var markerConnectionSet = typeToConnectionMap.get(marker.data(GlobalStrings.TYPE)).get(marker);
-	if(markerConnectionSet != null) {
-		markerConnectionSet.forEach(function(connection){
+	if (markerConnectionSet != null) {
+		markerConnectionSet.forEach(function(connection) {
 			var path = pathMap.get(marker.data(GlobalStrings.ID) + "<->" + connection.marker.data(GlobalStrings.ID));
-			if(path != null) {
+			if (path != null) {
 				path.marker1Data.cx = marker.attr("cx");
 				path.marker1Data.cy = marker.attr("cy");
 				path.marker2Data.cx = connection.marker.attr("cx");
 				path.marker2Data.cy = connection.marker.attr("cy");
 			} else {
-				path =  pathMap.get(connection.marker.data(GlobalStrings.ID) + "<->" + marker.data(GlobalStrings.ID));
+				path = pathMap.get(connection.marker.data(GlobalStrings.ID) + "<->" + marker.data(GlobalStrings.ID));
 				path.marker2Data.cx = marker.attr("cx");
 				path.marker2Data.cy = marker.attr("cy");
 				path.marker1Data.cx = connection.marker.attr("cx");
 				path.marker1Data.cy = connection.marker.attr("cy");
 			}
-		
+
 			path.element.attr("path", "M" + marker.attr("cx") + " " + marker.attr("cy") + "L" + connection.marker.attr("cx") + " " + connection.marker.attr("cy"));
 		});
 	}
@@ -1027,29 +841,29 @@ function markerDragEventEnd(marker, event) {
 
 $(document).bind("click", function(ev) {
 	ev.target.setAttribute("customNodeName", ev.target.nodeName);
-	
-	if(!showingPath && !draggingMarkerIgnoreClick && !draggingEverythingIgnoreClick) {
+
+	if (!showingPath && !draggingMarkerIgnoreClick && !draggingEverythingIgnoreClick) {
 		handleClick(ev, false);
 	}
-	
-	if(draggingMarkerIgnoreClick) {
+
+	if (draggingMarkerIgnoreClick) {
 		draggingMarkerIgnoreClick = false;
 	}
-	
-	if(draggingEverythingIgnoreClick) {
+
+	if (draggingEverythingIgnoreClick) {
 		draggingEverythingIgnoreClick = false;
 	}
 });
 
 function handleClick(ev, secondTry) {
-	var clickX = ev.offsetX ;
+	var clickX = ev.offsetX;
 	var clickY = ev.offsetY;
 
 	if (ev.target.getAttribute("customNodeName") == "tspan") {
 		clickX = ev.pageX;
 		clickY = ev.pageY - ($(document).height() - $("#raphael").height());
 	}
-	
+
 	clickX += paperShiftX;
 	clickY += paperShiftY;
 
@@ -1057,10 +871,10 @@ function handleClick(ev, secondTry) {
 	if (ev.target.getAttribute("customNodeName") == "svg" || ev.target.getAttribute("customNodeName") == "tspan" || secondTry) {
 		// Only clicking another marker is accepted when manuallyConnectingMarker is true
 		if (!manuallyConnectingMarker && !removingMode) {
-			
+
 			var pathClicked = false;
 			pathMap.forEach(function(pathString, path) {
-				if(path.isVisible) {
+				if (path.isVisible) {
 					for (var i = 0; i < 5; i++) {
 						for (var j = 0; j < 5; j++) {
 							var pointInside = path.element.isPointInside(clickX + i, clickY + j);
@@ -1085,20 +899,20 @@ function handleClick(ev, secondTry) {
 								}
 							}
 						}
-						if(pathClicked) {
+						if (pathClicked) {
 							break;
 						}
 					}
-					if(pathClicked) {
+					if (pathClicked) {
 						return false;
 					}
 				}
 			});
-			
-			if(!pathClicked) {
+
+			if (!pathClicked) {
 				var clickedElement = null;
-				
-				if(currentlyPlotting == plottingRoom) {
+
+				if (currentlyPlotting == plottingRoom || currentlyPlotting == plottingBathroomMens || currentlyPlotting == plottingBathroomWomens) {
 					paper.forEach(function(element) {
 						if (element.isPointInside(clickX, clickY)) {
 							// TODO: Find better solution then explicitly writing outline
@@ -1110,8 +924,8 @@ function handleClick(ev, secondTry) {
 					});
 				}
 
-				var marker = plotMarker(clickX-paperShiftX, clickY-paperShiftY, clickedElement);
-				if(marker != null) {
+				var marker = plotMarker(clickX - paperShiftX, clickY - paperShiftY, clickedElement);
+				if (marker != null) {
 					marker.attr("cx", clickX);
 					marker.attr("cy", clickY);
 					// marker.scale(paperResizeRatio, paperResizeRatio, clickX, clickY);
@@ -1132,7 +946,7 @@ function handleClick(ev, secondTry) {
 					}
 				}
 			});
-			if(marker != null) {
+			if (marker != null) {
 				return false;
 			}
 		});
@@ -1164,8 +978,8 @@ function handleClick(ev, secondTry) {
 					"    and    " + "<br>" +
 					pathObject.marker2Data.id + "<br>" +
 					"Distance: " + pathObject.distance);
-				$("#dialog_modal .modal-footer").html("<button type='button' class='btn btn-default' data-dismiss='modal' onclick='removeConnectionFromString(\""+pathObject+"\")'>Delete connection</button>" +
-				"<button type='button' class='btn btn-default' data-dismiss='modal'>Cancel</button>");
+				$("#dialog_modal .modal-footer").html("<button type='button' class='btn btn-default' data-dismiss='modal' onclick='removeConnectionFromString(\"" + pathObject + "\")'>Delete connection</button>" +
+					"<button type='button' class='btn btn-default' data-dismiss='modal'>Cancel</button>");
 				$('#dialog_modal').modal('toggle');
 			}
 		} else {
@@ -1201,9 +1015,9 @@ function handleMarkerClick(marker) {
 			$("#dialog_modal .modal-title").toggleClass("text-danger", false);
 			$("#dialog_modal .modal-title").text("Marker Information");
 			$("#dialog_modal .modal-body").html("ID: " + marker.data(GlobalStrings.ID) + "<br>Type: " + marker.data(GlobalStrings.TYPE));
-			$("#dialog_modal .modal-footer").html("<button type='button' class='btn btn-default' data-dismiss='modal' onclick='connectMarkerFrom(\""+marker.data(GlobalStrings.ID)+"\")'>Connect to marker</button>" +
-			"<button type='button' class='btn btn-default' data-dismiss='modal' onclick='removeMarkerWithId(\""+marker.data(GlobalStrings.ID)+"\")'>Remove</button>" +
-			"<button type='button' class='btn btn-default' data-dismiss='modal'>Cancel</button>");
+			$("#dialog_modal .modal-footer").html("<button type='button' class='btn btn-default' data-dismiss='modal' onclick='connectMarkerFrom(\"" + marker.data(GlobalStrings.ID) + "\")'>Connect to marker</button>" +
+				"<button type='button' class='btn btn-default' data-dismiss='modal' onclick='removeMarkerWithId(\"" + marker.data(GlobalStrings.ID) + "\")'>Remove</button>" +
+				"<button type='button' class='btn btn-default' data-dismiss='modal'>Cancel</button>");
 			$('#dialog_modal').modal('toggle');
 		}
 	}
@@ -1230,15 +1044,15 @@ function connectMarkerFrom(id) {
 	}
 }
 
-function removeMarkerWithId(id){
+function removeMarkerWithId(id) {
 	var marker = getMarkerFromId(id);
 	removeMarker(marker);
 }
 
 function getMarkerColorFromType(type) {
 	var color = markerTypeToColorMap.get(type);
-	
-	if(color == null) {
+
+	if (color == null) {
 		color = "black";
 	}
 	return color;
@@ -1313,7 +1127,7 @@ function cancelManualConnect(cancelManuallyConnectingMode) {
 //element is the element this new marker is connected to
 
 function plotMarker(x, y, element) {
-	if(currentBuilding == GlobalStrings.ALL_BUILDINGS && currentlyPlotting != plottingPathway) {
+	if (currentBuilding == GlobalStrings.ALL_BUILDINGS && currentlyPlotting != plottingPathway) {
 		alertDialog("Unless you are plotting pathway markers, you must select a specific building and floor to plot markers.");
 	} else {
 		var marker;
@@ -1354,11 +1168,11 @@ function plotMarker(x, y, element) {
 				marker = plotBathroomWomens(x, y, currentBuilding, currentFloor, element.data(GlobalStrings.ID));
 				break;
 		}
-	
-		if(marker != null) {
+
+		if (marker != null) {
 			typeToConnectionMap.get(marker.data(GlobalStrings.TYPE)).set(marker, newConnectionSet());
 		}
-		
+
 		return marker;
 	}
 	return null;
@@ -1366,7 +1180,7 @@ function plotMarker(x, y, element) {
 
 function plotRoom(x, y, building, floor, elementId) {
 	var roomId = elementId;
-	
+
 	var marker = null;
 
 	var addToUndoStackHolder = addToUndoStack;
@@ -1379,8 +1193,8 @@ function plotRoom(x, y, building, floor, elementId) {
 
 		alertDialog("There is already a marker for this room");
 	} else {
-		info("Plotting new room " + roomId + " at (" + x + "," + y + ")");
-		
+		LOG.info("Plotting new room " + roomId + " at (" + x + "," + y + ")");
+
 		marker = addMarker(x, y, markerTypeToColorMap.get(GlobalStrings.ROOM));
 
 		addToUndoStack = addToUndoStackHolder;
@@ -1389,7 +1203,7 @@ function plotRoom(x, y, building, floor, elementId) {
 		marker.data(GlobalStrings.BUILDING, building);
 		marker.data(GlobalStrings.FLOOR, floor);
 		marker.data(GlobalStrings.TYPE, GlobalStrings.ROOM);
-		
+
 		roomMap.set(marker.data(GlobalStrings.ID), marker);
 	}
 
@@ -1403,7 +1217,7 @@ function plotRoom(x, y, building, floor, elementId) {
 
 function plotDoor(x, y, building, floor) {
 	var id = formatDoorId(building, floor);
-	info("Plotting new door " + id + " at (" + x + "," + y + ")");
+	LOG.info("Plotting new door " + id + " at (" + x + "," + y + ")");
 	marker = addMarker(x, y, markerTypeToColorMap.get(GlobalStrings.DOOR));
 	marker.data(GlobalStrings.ID, id);
 	marker.data(GlobalStrings.BUILDING, building);
@@ -1416,7 +1230,7 @@ function plotDoor(x, y, building, floor) {
 
 function plotHallway(x, y, building, floor) {
 	var id = formatHallwayId(building, floor);
-	info("Plotting new hallway " + id + " at (" + x + "," + y + ")");
+	LOG.info("Plotting new hallway " + id + " at (" + x + "," + y + ")");
 	marker = addMarker(x, y, markerTypeToColorMap.get(GlobalStrings.HALLWAY));
 	marker.data(GlobalStrings.ID, id);
 	marker.data(GlobalStrings.BUILDING, building);
@@ -1429,7 +1243,7 @@ function plotHallway(x, y, building, floor) {
 
 function plotPathway(x, y) {
 	var id = formatPathwayId();
-	info("Plotting new pathway " + id + " at (" + x + "," + y + ")");
+	LOG.info("Plotting new pathway " + id + " at (" + x + "," + y + ")");
 	marker = addMarker(x, y, markerTypeToColorMap.get(GlobalStrings.PATHWAY));
 	marker.data(GlobalStrings.ID, id);
 	marker.data(GlobalStrings.TYPE, GlobalStrings.PATHWAY);
@@ -1440,7 +1254,7 @@ function plotPathway(x, y) {
 
 function plotStair(x, y, building, floor) {
 	var id = formatStairId(building, floor);
-	info("Plotting new stair " + id + " at (" + x + "," + y + ")");
+	LOG.info("Plotting new stair " + id + " at (" + x + "," + y + ")");
 	marker = addMarker(x, y, markerTypeToColorMap.get(GlobalStrings.STAIR));
 	marker.data(GlobalStrings.ID, id);
 	marker.data(GlobalStrings.BUILDING, building);
@@ -1453,7 +1267,7 @@ function plotStair(x, y, building, floor) {
 
 function plotElevator(x, y, building, floor) {
 	var id = formatElevatorId(building, floor);
-	info("Plotting new elevator " + id + " at (" + x + "," + y + ")");
+	LOG.info("Plotting new elevator " + id + " at (" + x + "," + y + ")");
 	marker = addMarker(x, y, markerTypeToColorMap.get(GlobalStrings.ELEVATOR));
 	marker.data(GlobalStrings.ID, id);
 	marker.data(GlobalStrings.BUILDING, building);
@@ -1467,7 +1281,7 @@ function plotElevator(x, y, building, floor) {
 function plotBathroomMens(x, y, building, floor, elementId) {
 	// var id = formatBathroomMensId(building, floor);
 	var id = elementId;
-	info("Plotting new men's bathroom " + id + " at (" + x + "," + y + ")");
+	LOG.info("Plotting new men's bathroom " + id + " at (" + x + "," + y + ")");
 	marker = addMarker(x, y, markerTypeToColorMap.get(GlobalStrings.BATHROOM_MENS));
 	marker.data(GlobalStrings.ID, id);
 	marker.data(GlobalStrings.BUILDING, building);
@@ -1481,7 +1295,7 @@ function plotBathroomMens(x, y, building, floor, elementId) {
 function plotBathroomWomens(x, y, building, floor, elementId) {
 	// var id = formatBathroomWomensId(building, floor);
 	var id = elementId;
-	info("Plotting new women's bathroom " + id + " at (" + x + "," + y + ")");
+	LOG.info("Plotting new women's bathroom " + id + " at (" + x + "," + y + ")");
 	marker = addMarker(x, y, markerTypeToColorMap.get(GlobalStrings.BATHROOM_WOMENS));
 	marker.data(GlobalStrings.ID, id);
 	marker.data(GlobalStrings.BUILDING, building);
@@ -1496,24 +1310,24 @@ function addMarker(x, y, color) {
 	var marker = paper.circle(x, y, markerSize).attr({
 		fill: color
 	});
-	
+
 	setMarkerDragEventHandlers(marker);
 
 	if (addToUndoStack) {
 		undoStack.push(new Command().addMarker(marker));
 	}
-	
+
 	allElementsSet.push(marker);
-	
+
 	return marker;
 }
 
 function getMarkerFromId(id) {
 	var returnMarker = null;
-	
-	allMarkers.forEach(function(markerMap){
+
+	allMarkers.forEach(function(markerMap) {
 		returnMarker = markerMap.get(id);
-		if(returnMarker != null) {
+		if (returnMarker != null) {
 			return false;
 		}
 	});
@@ -1522,19 +1336,19 @@ function getMarkerFromId(id) {
 }
 
 function autoConnect() {
-	info("Automatically connecting markers");
+	LOG.info("Automatically connecting markers");
 	var addedPathsSet = new buckets.Set();
-	
-	allMarkers.forEach(function(markerMap){
-		markerMap.forEach(function(markerId, marker){
-			if(marker.isVisible()){
-				if(marker.data(GlobalStrings.TYPE) == GlobalStrings.ROOM) {
+
+	allMarkers.forEach(function(markerMap) {
+		markerMap.forEach(function(markerId, marker) {
+			if (marker.isVisible()) {
+				if (marker.data(GlobalStrings.TYPE) == GlobalStrings.ROOM) {
 					// For each room, connect to corresponding doors
 					var room = marker;
 					var closestDoor = getClosestDoor(room, true, true);
-					if(closestDoor != null) {
+					if (closestDoor != null) {
 						var connection = makeConnection(room, closestDoor);
-						if(connection != null) {
+						if (connection != null) {
 							addedPathsSet.add(connection);
 						}
 					}
@@ -1543,7 +1357,7 @@ function autoConnect() {
 							addedPathsSet.add(makeConnection(room, door));
 						}
 					});
-				} else if(marker.data(GlobalStrings.TYPE) == GlobalStrings.DOOR) {
+				} else if (marker.data(GlobalStrings.TYPE) == GlobalStrings.DOOR) {
 					// For each door, connect to closest hallway
 					var door = marker;
 					var closestHallway = getClosestHallway(door);
@@ -1556,7 +1370,7 @@ function autoConnect() {
 					} else {
 						if (doorConnectionMap.get(door).size() == 0) {
 							var closestRoom = getClosestRoom(door);
-							if(closestRoom != null && getDistance(door, closestRoom) <= 50 && roomConnectionMap.get(closestRoom).size() < 2) {
+							if (closestRoom != null && getDistance(door, closestRoom) <= 50 && roomConnectionMap.get(closestRoom).size() < 2) {
 								var connection = makeConnection(door, closestRoom);
 								if (connection != null) {
 									addedPathsSet.add(connection);
@@ -1564,7 +1378,7 @@ function autoConnect() {
 							}
 						}
 					}
-				} else if(marker.data(GlobalStrings.TYPE) == GlobalStrings.HALLWAY) {
+				} else if (marker.data(GlobalStrings.TYPE) == GlobalStrings.HALLWAY) {
 					// For each hallway, connect to closest hallway if hallway in the same building and floor (otherwise it would go through a door)
 					var hallway = marker;
 					var connectTo = null;
@@ -1574,8 +1388,8 @@ function autoConnect() {
 						// only if hallway not already connected to a door)
 						var closestHallwayDistance = getDistance(hallway, closestHallway);
 						var connectedToADoor = false;
-						hallwayConnectionMap.get(hallway).forEach(function(connection){
-							if(connection.marker.data(GlobalStrings.TYPE) == GlobalStrings.DOOR) {
+						hallwayConnectionMap.get(hallway).forEach(function(connection) {
+							if (connection.marker.data(GlobalStrings.TYPE) == GlobalStrings.DOOR) {
 								connectedToADoor = true;
 								return false;
 							}
@@ -1583,23 +1397,23 @@ function autoConnect() {
 						var connectionSet = hallwayConnectionMap.get(closestHallway);
 
 						var closestDoor = null;
-						if(connectionSet != null && !connectedToADoor) {
-							connectionSet.forEach(function(connection){
-								if(connection.marker.data(GlobalStrings.TYPE) == GlobalStrings.DOOR) {
-									if(getDistance(hallway, connection.marker) < closestHallwayDistance) {
+						if (connectionSet != null && !connectedToADoor) {
+							connectionSet.forEach(function(connection) {
+								if (connection.marker.data(GlobalStrings.TYPE) == GlobalStrings.DOOR) {
+									if (getDistance(hallway, connection.marker) < closestHallwayDistance) {
 										var doorConnectedToARoom = false;
-										doorConnectionMap.get(connection.marker).forEach(function(connection2){
-											if(connection2.marker.data(GlobalStrings.TYPE) == GlobalStrings.ROOM ||
-												connection2.marker.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_MENS || 
+										doorConnectionMap.get(connection.marker).forEach(function(connection2) {
+											if (connection2.marker.data(GlobalStrings.TYPE) == GlobalStrings.ROOM ||
+												connection2.marker.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_MENS ||
 												connection2.marker.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_WOMENS) {
 												doorConnectedToARoom = true;
 											}
 										});
-										if(!doorConnectedToARoom) {
-											if(closestDoor == null) {
+										if (!doorConnectedToARoom) {
+											if (closestDoor == null) {
 												closestDoor = connection.marker;
 											} else {
-												if(getDistance(hallway, connection.marker) < getDistance(hallway, closestDoor)) {
+												if (getDistance(hallway, connection.marker) < getDistance(hallway, closestDoor)) {
 													closestDoor = connection.marker;
 												}
 											}
@@ -1608,23 +1422,23 @@ function autoConnect() {
 								}
 							});
 						}
-						
+
 						var connection;
-						if(closestDoor != null) {
+						if (closestDoor != null) {
 							connectTo = closestDoor;
 							connection = makeConnection(hallway, connectTo);
 						} else {
 							connectTo = closestHallway;
-							if(getDistance(hallway, connectTo) < 80) {
+							if (getDistance(hallway, connectTo) < 80) {
 								connection = makeConnection(hallway, connectTo);
-							} 
+							}
 						}
-						
+
 						if (connection != null) {
 							addedPathsSet.add(connection);
 						}
 					}
-				} else if(marker.data(GlobalStrings.TYPE) == GlobalStrings.PATHWAY) {
+				} else if (marker.data(GlobalStrings.TYPE) == GlobalStrings.PATHWAY) {
 					// For each pathway, connect to closest pathway or door (whichever is closer)
 					var pathway = marker;
 					var closestPathway = getClosestPathway(pathway);
@@ -1654,7 +1468,7 @@ function autoConnect() {
 							addedPathsSet.add(connection);
 						}
 					}
-				} else if(marker.data(GlobalStrings.TYPE) == GlobalStrings.STAIR) {
+				} else if (marker.data(GlobalStrings.TYPE) == GlobalStrings.STAIR) {
 					// For each stair, connect to closest hallway
 					var stair = marker;
 					var closestHallway = getClosestHallway(stair);
@@ -1664,7 +1478,7 @@ function autoConnect() {
 							addedPathsSet.add(connection);
 						}
 					}
-				} else if(marker.data(GlobalStrings.TYPE) == GlobalStrings.ELEVATOR) {
+				} else if (marker.data(GlobalStrings.TYPE) == GlobalStrings.ELEVATOR) {
 					// For each elevator, connect to closest hallway
 					var elevator = marker;
 					var closestHallway = getClosestHallway(elevator);
@@ -1674,23 +1488,23 @@ function autoConnect() {
 							addedPathsSet.add(connection);
 						}
 					}
-				} else if(marker.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_MENS) {
+				} else if (marker.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_MENS) {
 					// For each bathroom, connect to closest door
 					var bathroom = marker;
 					var closestDoor = getClosestDoor(bathroom);
-					if(closestDoor != null) {
+					if (closestDoor != null) {
 						var connection = makeConnection(bathroom, closestDoor);
-						if(connection != null) {
+						if (connection != null) {
 							addedPathsSet.add(connection);
 						}
 					}
-				} else if(marker.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_WOMENS) {
+				} else if (marker.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_WOMENS) {
 					// For each bathroom, connect to closest door
 					var bathroom = marker;
 					var closestDoor = getClosestDoor(bathroom);
-					if(closestDoor != null) {
+					if (closestDoor != null) {
 						var connection = makeConnection(bathroom, closestDoor);
-						if(connection != null) {
+						if (connection != null) {
 							addedPathsSet.add(connection);
 						}
 					}
@@ -1707,7 +1521,7 @@ function autoConnect() {
 function getClosestRoom(marker) {
 	var closestRoom = null;
 	var closestDistance = 9999999;
-	
+
 	roomMap.forEach(function(roomId, room) {
 		if (room.isVisible() && marker != room && inSameBuilding(marker, room) && onSameFloor(marker, room)) {
 			var distance = getDistance(marker, room);
@@ -1717,13 +1531,13 @@ function getClosestRoom(marker) {
 			}
 		}
 	});
-	
+
 	if (closestRoom != null) {
-		debug("Closest room marker to " + marker.data(GlobalStrings.ID) + " is " + closestRoom.data(GlobalStrings.ID));
+		LOG.debug("Closest room marker to " + marker.data(GlobalStrings.ID) + " is " + closestRoom.data(GlobalStrings.ID));
 	} else {
-		debug("Closest room marker to " + marker.data(GlobalStrings.ID) + " is null");
+		LOG.debug("Closest room marker to " + marker.data(GlobalStrings.ID) + " is null");
 	}
-	
+
 	return closestRoom;
 }
 
@@ -1741,9 +1555,9 @@ function getClosestBathroomMens(marker) {
 	});
 
 	if (closestBathroom != null) {
-		debug("Closest men's bathroom marker to " + marker.data(GlobalStrings.ID) + " is " + closestBathroom.data(GlobalStrings.ID));
+		LOG.debug("Closest men's bathroom marker to " + marker.data(GlobalStrings.ID) + " is " + closestBathroom.data(GlobalStrings.ID));
 	} else {
-		debug("Closest men's bathroom marker to " + marker.data(GlobalStrings.ID) + " is null");
+		LOG.debug("Closest men's bathroom marker to " + marker.data(GlobalStrings.ID) + " is null");
 	}
 
 	return closestBathroom;
@@ -1763,9 +1577,9 @@ function getClosestBathroomWomens(marker) {
 	});
 
 	if (closestBathroom != null) {
-		debug("Closest women's bathroom marker to " + marker.data(GlobalStrings.ID) + " is " + closestBathroom.data(GlobalStrings.ID));
+		LOG.debug("Closest women's bathroom marker to " + marker.data(GlobalStrings.ID) + " is " + closestBathroom.data(GlobalStrings.ID));
 	} else {
-		debug("Closest women's bathroom marker to " + marker.data(GlobalStrings.ID) + " is null");
+		LOG.debug("Closest women's bathroom marker to " + marker.data(GlobalStrings.ID) + " is null");
 	}
 
 	return closestBathroom;
@@ -1785,9 +1599,9 @@ function getClosestHallway(marker) {
 	});
 
 	if (closestHallway != null) {
-		debug("Closest hallway marker to " + marker.data(GlobalStrings.ID) + " is " + closestHallway.data(GlobalStrings.ID));
+		LOG.debug("Closest hallway marker to " + marker.data(GlobalStrings.ID) + " is " + closestHallway.data(GlobalStrings.ID));
 	} else {
-		debug("Closest hallway marker to " + marker.data(GlobalStrings.ID) + " is null");
+		LOG.debug("Closest hallway marker to " + marker.data(GlobalStrings.ID) + " is null");
 	}
 
 	return closestHallway;
@@ -1814,9 +1628,9 @@ function getClosestDoor(marker, sameBuilding, sameFloor) {
 	});
 
 	if (closestDoor != null) {
-		debug("Closest door marker to " + marker.data(GlobalStrings.ID) + " is " + closestDoor.data(GlobalStrings.ID));
+		LOG.debug("Closest door marker to " + marker.data(GlobalStrings.ID) + " is " + closestDoor.data(GlobalStrings.ID));
 	} else {
-		debug("Closest door marker to " + marker.data(GlobalStrings.ID) + " is null");
+		LOG.debug("Closest door marker to " + marker.data(GlobalStrings.ID) + " is null");
 	}
 
 	return closestDoor;
@@ -1836,9 +1650,9 @@ function getClosestPathway(marker) {
 	});
 
 	if (closestPathway != null) {
-		debug("Closest door marker to " + marker.data(GlobalStrings.ID) + " is " + closestPathway.data(GlobalStrings.ID));
+		LOG.debug("Closest door marker to " + marker.data(GlobalStrings.ID) + " is " + closestPathway.data(GlobalStrings.ID));
 	} else {
-		debug("Closest door marker to " + marker.data(GlobalStrings.ID) + " is null");
+		LOG.debug("Closest door marker to " + marker.data(GlobalStrings.ID) + " is null");
 	}
 
 	return closestPathway;
@@ -1907,10 +1721,11 @@ function makeConnection(marker1, marker2) {
 }
 
 function makePath(marker1, marker2) {
-	debug("Making path between " + marker1.data(GlobalStrings.ID) + " and " + marker2.data(GlobalStrings.ID));
+	LOG.debug("Making path between " + marker1.data(GlobalStrings.ID) + " and " + marker2.data(GlobalStrings.ID));
 
 	var path = paper.path("M" + marker1.attr("cx") + " " + marker1.attr("cy") + "L" + marker2.attr("cx") + " " + marker2.attr("cy"));
-	path.toBack();
+	marker1.toFront();
+	marker2.toFront();
 	path.attr("stroke-width", pathStrokeWidth);
 	var distance = getDistance(marker1, marker2);
 	var pathObject = new Path(path, getMarkerData(marker1), getMarkerData(marker2), distance);
@@ -1945,52 +1760,94 @@ function markerIdNull(marker) {
 }
 
 function getRoomFromRoomId(roomId) {
-	return roomId.substr(roomId.lastIndexOf("rm_") + 3);
+	return roomId.substr(roomId.lastIndexOf(GlobalStrings.ROOM_ID + "_") + 3);
 }
 
 function formatRoomId(building, floor, room) {
-	return "bldg_" + building + "_flr_" + floor + "_rm_" + room;
+	return GlobalStrings.BUILDING_ID + "_" + building + "_" + GlobalStrings.FLOOR_ID + "_" + floor + "_" + GlobalStrings.ROOM_ID + "_" + room;
 }
 
 function formatDoorId(building, floor) {
-	doorIdCount++;
-	var id = "bldg_" + building + "_flr_" + floor + "_dr_" + doorIdCount;
+	var id = null;
+	while (id == null) {
+		doorIdCount++;
+		var tmpId = GlobalStrings.BUILDING_ID + "_" + building + "_" + GlobalStrings.FLOOR_ID + "_" + floor + "_" + GlobalStrings.DOOR_ID + "_" + doorIdCount;
+		if (!doorMap.containsKey(tmpId)) {
+			id = tmpId;
+		}
+	}
 	return id;
 }
 
 function formatHallwayId(building, floor) {
-	hallwayIdCount++;
-	var id = "bldg_" + building + "_flr_" + floor + "_hw_" + hallwayIdCount;
+	var id = null;
+	while (id == null) {
+		hallwayIdCount++;
+		var tmpId = GlobalStrings.BUILDING_ID + "_" + building + "_" + GlobalStrings.FLOOR_ID + "_" + floor + "_" + GlobalStrings.HALLWAY_ID + "_" + hallwayIdCount;
+		if (!hallwayMap.containsKey(tmpId)) {
+			id = tmpId;
+		}
+	}
 	return id;
 }
 
 function formatPathwayId() {
-	pathwayIdCount++;
-	var id = "pathway_" + pathwayIdCount;
+	var id = null;
+	while (id == null) {
+		pathwayIdCount++;
+		var tmpId = GlobalStrings.PATHWAY_ID + "_" + pathwayIdCount;
+		if (!pathwayMap.containsKey(tmpId)) {
+			id = tmpId;
+		}
+	}
 	return id;
 }
 
 function formatStairId(building, floor) {
-	stairIdCount++;
-	var id = "bldg_" + building + "_flr_" + floor + "_st_" + stairIdCount;
+	var id = null;
+	while (id == null) {
+		stairIdCount++;
+		var tmpId = GlobalStrings.BUILDING_ID + "_" + building + "_" + GlobalStrings.FLOOR_ID + "_" + floor + "_" + GlobalStrings.STAIR_ID + "_" + stairIdCount;
+		if (!stairMap.containsKey(tmpId)) {
+			id = tmpId;
+		}
+	}
 	return id;
 }
 
 function formatElevatorId(building, floor) {
-	elevatorIdCount++;
-	var id = "bldg_" + building + "_flr_" + floor + "_el_" + elevatorIdCount;
+	var id = null;
+	while (id == null) {
+		elevatorIdCount++;
+		var tmpId = GlobalStrings.BUILDING_ID + "_" + building + "_" + GlobalStrings.FLOOR_ID + "_" + floor + "_" + GlobalStrings.ELEVATOR_ID + "_" + elevatorIdCount;
+		if (!elevatorMap.containsKey(tmpId)) {
+			id = tmpId;
+		}
+	}
 	return id;
 }
 
 function formatBathroomMensId(building, floor) {
-	bathroomMensIdCount++;
-	var id = "bldg_" + building + "_flr_" + floor + "_bathroom_mens_" + bathroomMensIdCount;
+	var id = null;
+	while (id == null) {
+		bathroomMensIdCount++;
+		var tmpId = GlobalStrings.BUILDING_ID + "_" + building + "_" + GlobalStrings.FLOOR_ID + "_" + floor + "_" + GlobalStrings.BATHROOM_MENS + "_" + bathroomMensIdCount;
+		if (!bathroomMensMap.containsKey(tmpId)) {
+			id = tmpId;
+		}
+	}
 	return id;
 }
 
 function formatBathroomWomensId(building, floor) {
-	bathroomWomensIdCount++;
-	var id = "bldg_" + building + "_flr_" + floor + "_bathroom_womens_" + bathroomWomensIdCount;
+	var id = null;
+	while (id == null) {
+		bathroomWomensIdCount++;
+		var tmpId = GlobalStrings.BUILDING_ID + "_" + building + "_" + GlobalStrings.FLOOR_ID + "_" + floor + "_" + GlobalStrings.BATHROOM_WOMENS + "_" + bathroomWomensIdCount;
+		if (!bathroomWomensMap.containsKey(tmpId)) {
+			id = tmpId;
+		}
+	}
 	return id;
 }
 
@@ -2031,54 +1888,54 @@ function plotSelect(type) {
 	} else if (type == GlobalStrings.BATHROOM_WOMENS) {
 		bathroomWomensSelected();
 	} else {
-		warn("plotSelect called with invalid type " + type);
+		LOG.warn("plotSelect called with invalid type " + type);
 	}
 }
 
 function roomSelected() {
-	debug("Room plotting selected");
+	LOG.debug("Room plotting selected");
 	currentlyPlotting = plottingRoom;
 	setToolTipTextForCurrentlyPlotting();
 }
 
 function doorSelected() {
-	debug("Door plotting selected");
+	LOG.debug("Door plotting selected");
 	currentlyPlotting = plottingDoor;
 	setToolTipTextForCurrentlyPlotting();
 }
 
 function hallwaySelected() {
-	debug("Hallway plotting selected");
+	LOG.debug("Hallway plotting selected");
 	currentlyPlotting = plottingHallway;
 	setToolTipTextForCurrentlyPlotting();
 }
 
 function pathwaySelected() {
-	debug("Pathway plotting selected");
+	LOG.debug("Pathway plotting selected");
 	currentlyPlotting = plottingPathway;
 	setToolTipTextForCurrentlyPlotting();
 }
 
 function stairSelected() {
-	debug("Stair plotting selected");
+	LOG.debug("Stair plotting selected");
 	currentlyPlotting = plottingStair;
 	setToolTipTextForCurrentlyPlotting();
 }
 
 function elevatorSelected() {
-	debug("Elevator plotting selected");
+	LOG.debug("Elevator plotting selected");
 	currentlyPlotting = plottingElevator;
 	setToolTipTextForCurrentlyPlotting();
 }
 
 function bathroomMensSelected() {
-	debug("Men's bathroom plotting selected");
+	LOG.debug("Men's bathroom plotting selected");
 	currentlyPlotting = plottingBathroomMens;
 	setToolTipTextForCurrentlyPlotting();
 }
 
 function bathroomWomensSelected() {
-	debug("Women's bathroom plotting selected");
+	LOG.debug("Women's bathroom plotting selected");
 	currentlyPlotting = plottingBathroomWomens;
 	setToolTipTextForCurrentlyPlotting();
 }
@@ -2123,11 +1980,11 @@ function setToolTipText(text) {
 
 function manualConnect() {
 	if (manuallyConnectingMode) {
-		debug("Cancel manual connect selected");
+		LOG.debug("Cancel manual connect selected");
 		cancelManualConnect(true);
 		enableAllButtons();
 	} else {
-		debug("Manual connect selected");
+		LOG.debug("Manual connect selected");
 		var totalMarkers = getTotalNumberOfMarkers();
 		if (totalMarkers > 1) {
 			manuallyConnectingMode = true;
@@ -2159,10 +2016,10 @@ function markerDialog(text) {
 
 function removeConnection(pathObject, marker1, marker2, marker1ConnectionSet, marker2ConnectionSet) {
 	var start = new Date().getTime();
-	debug("Removing connection for path " + pathObject);
-	if(typeof marker1 !== "undefined" && typeof marker2 !== "undefined") {
-		if(typeof marker1ConnectionSet !== "undefined" && typeof marker2ConnectionSet !== "undefined") {
-			if(marker1ConnectionSet != null) {
+	LOG.debug("Removing connection for path " + pathObject);
+	if (typeof marker1 !== "undefined" && typeof marker2 !== "undefined") {
+		if (typeof marker1ConnectionSet !== "undefined" && typeof marker2ConnectionSet !== "undefined") {
+			if (marker1ConnectionSet != null) {
 				marker1ConnectionSet.forEach(function(connection) {
 					if (connection.marker == marker2) {
 						marker1ConnectionSet.remove(connection);
@@ -2170,8 +2027,8 @@ function removeConnection(pathObject, marker1, marker2, marker1ConnectionSet, ma
 					}
 				});
 			}
-			
-			if(marker2ConnectionSet != null){
+
+			if (marker2ConnectionSet != null) {
 				marker2ConnectionSet.forEach(function(connection) {
 					if (connection.marker == marker1) {
 						marker2ConnectionSet.remove(connection);
@@ -2183,7 +2040,7 @@ function removeConnection(pathObject, marker1, marker2, marker1ConnectionSet, ma
 	} else {
 		var marker1ConnectionSet;
 		marker1ConnectionSet = getConnectionMapForType(pathObject.marker1Data.type).get(getMarkerFromId(pathObject.marker1Data.id));
-		if(marker1ConnectionSet != null){
+		if (marker1ConnectionSet != null) {
 			marker1ConnectionSet.forEach(function(connection) {
 				if (connection.marker.data(GlobalStrings.ID) == pathObject.marker2Data.id) {
 					marker1ConnectionSet.remove(connection);
@@ -2194,7 +2051,7 @@ function removeConnection(pathObject, marker1, marker2, marker1ConnectionSet, ma
 
 		var marker2ConnectionSet;
 		marker2ConnectionSet = getConnectionMapForType(pathObject.marker2Data.type).get(getMarkerFromId(pathObject.marker2Data.id));
-		if(marker2ConnectionSet != null){
+		if (marker2ConnectionSet != null) {
 			marker2ConnectionSet.forEach(function(connection) {
 				if (connection.marker.data(GlobalStrings.ID) == pathObject.marker1Data.id) {
 					marker2ConnectionSet.remove(connection);
@@ -2208,12 +2065,12 @@ function removeConnection(pathObject, marker1, marker2, marker1ConnectionSet, ma
 
 	pathObject.element.remove();
 
-	stats("Took " + (new Date().getTime() - start) + " ms to remove connection " + pathObject);
+	LOG.trace("Took " + (new Date().getTime() - start) + " ms to remove connection " + pathObject);
 	return pathObject;
 }
 
 function removeMarker(marker) {
-	debug("Removing marker " + marker.data(GlobalStrings.ID));
+	LOG.debug("Removing marker " + marker.data(GlobalStrings.ID));
 	var removedPaths = removeAllConnectionsFrom(marker);
 	var markerMap = getMarkerMapForType(marker.data(GlobalStrings.TYPE));
 	markerMap.remove(marker.data(GlobalStrings.ID));
@@ -2227,34 +2084,34 @@ function removeMarker(marker) {
 
 function removeAllConnectionsFrom(marker) {
 	var start = new Date().getTime();
-	debug("Removing all connections from marker " + marker.data(GlobalStrings.ID));
+	LOG.debug("Removing all connections from marker " + marker.data(GlobalStrings.ID));
 	var removedPaths = new buckets.Set();
 	var markerConnectionSet = typeToConnectionMap.get(marker.data(GlobalStrings.TYPE)).get(marker);
-	if(markerConnectionSet != null) {
-		markerConnectionSet.forEach(function(connection){
+	if (markerConnectionSet != null) {
+		markerConnectionSet.forEach(function(connection) {
 			var path = pathMap.get(marker.data(GlobalStrings.ID) + "<->" + connection.marker.data(GlobalStrings.ID));
-			if(path == null) {
+			if (path == null) {
 				path = pathMap.get(connection.marker.data(GlobalStrings.ID) + "<->" + marker.data(GlobalStrings.ID));
 			}
-			removedPaths.add(removeConnection(path, marker, connection.marker, markerConnectionSet, 
+			removedPaths.add(removeConnection(path, marker, connection.marker, markerConnectionSet,
 				typeToConnectionMap.get(connection.marker.data(GlobalStrings.TYPE)).get(connection.marker)));
 		});
 	}
 
-	stats("Took " + (new Date().getTime() - start) + " ms to remove all connections from marker " + marker.data(GlobalStrings.ID));
+	LOG.trace("Took " + (new Date().getTime() - start) + " ms to remove all connections from marker " + marker.data(GlobalStrings.ID));
 	return removedPaths;
 }
 
 function removeMode() {
 	if (removingMode) {
-		debug("Cancel remove mode selected");
+		LOG.debug("Cancel remove mode selected");
 		removingMode = false;
 		cancelManualConnect(true);
 		$("#remove_button").text("Remove mode");
 		enableAllButtons();
 		$("#remove_button").toggleClass("active", false);
 	} else {
-		debug("Remove mode selected");
+		LOG.debug("Remove mode selected");
 		removingMode = true;
 		cancelManualConnect(true);
 		setToolTipText(REMOVE_MODE_TIP_TEXT);
@@ -2265,7 +2122,7 @@ function removeMode() {
 }
 
 function undo() {
-	debug("Undo selected");
+	LOG.debug("Undo selected");
 	var command = undoStack.pop();
 	if (command != null) {
 		command.undoAction();
@@ -2273,7 +2130,7 @@ function undo() {
 }
 
 function redo() {
-	debug("Redo selected");
+	LOG.debug("Redo selected");
 	var command = redoStack.pop();
 	if (command != null) {
 		command.redoAction();
@@ -2317,22 +2174,22 @@ function enableAllButtons() {
 function generateGraph() {
 	var start = new Date().getTime();
 	graph = new Graph();
-	
-	allMarkers.forEach(function(markerMap){
+
+	allMarkers.forEach(function(markerMap) {
 		markerMap.forEach(function(markerId, marker) {
 			var connectionsString = "";
 			var firstConnection = true;
-			
+
 			var markerConnectionSet = typeToConnectionMap.get(marker.data(GlobalStrings.TYPE)).get(marker);
-			markerConnectionSet.forEach(function(connection){
+			markerConnectionSet.forEach(function(connection) {
 				if (firstConnection) {
 					firstConnection = false;
 				} else {
 					connectionsString += ", ";
 				}
-				
-				if(marker.data(GlobalStrings.TYPE) == GlobalStrings.ROOM || connection.marker.data(GlobalStrings.TYPE) == GlobalStrings.ROOM) {
-					connectionsString += connection.marker.data(GlobalStrings.ID) + ": " + (connection.distance*5);
+
+				if (marker.data(GlobalStrings.TYPE) == GlobalStrings.ROOM || connection.marker.data(GlobalStrings.TYPE) == GlobalStrings.ROOM) {
+					connectionsString += connection.marker.data(GlobalStrings.ID) + ": " + (connection.distance * 5);
 				} else {
 					connectionsString += connection.marker.data(GlobalStrings.ID) + ": " + connection.distance;
 				}
@@ -2344,9 +2201,9 @@ function generateGraph() {
 		});
 	});
 
-	info(convertMarkersAndPathsToJson(roomMap, doorMap, hallwayMap, pathwayMap, stairMap, elevatorMap, bathroomMensMap, bathroomWomensMap, pathMap));
-	
-	stats("Took " + (new Date().getTime() - start) + " ms to generate graph");
+	LOG.info(convertMarkersAndPathsToJson(roomMap, doorMap, hallwayMap, pathwayMap, stairMap, elevatorMap, bathroomMensMap, bathroomWomensMap, pathMap));
+
+	LOG.trace("Took " + (new Date().getTime() - start) + " ms to generate graph");
 
 	// var request = $.ajax({
 	// 	url: "upload",
@@ -2358,7 +2215,7 @@ function generateGraph() {
 	// });
 	//
 	// request.done(function(msg) {
-	// 	debug(msg);
+	// 	LOG.debug(msg);
 	// });
 	//
 	// request.fail(function(jqXHR, textStatus) {
@@ -2392,8 +2249,8 @@ function testFindPath() {
 		enableAllButtons();
 	} else {
 		var markerOptionsHTML = "";
-		allMarkers.forEach(function(markerMap){
-			markerMap.forEach(function(markerId, marker){
+		allMarkers.forEach(function(markerMap) {
+			markerMap.forEach(function(markerId, marker) {
 				markerOptionsHTML += "<option value='" + markerId + "'>" + markerId + "</option>";
 			});
 		});
@@ -2412,33 +2269,33 @@ function testFindPath() {
 			markerOptionsHTML +
 			"</select>" +
 			"</fieldset>";
-			
-			var footerButtonsHTML = "<button type='button' class='btn btn-default' data-dismiss='modal' onclick='findPathSelected()'>Pathfind</button>" +
+
+		var footerButtonsHTML = "<button type='button' class='btn btn-default' data-dismiss='modal' onclick='findPathSelected()'>Pathfind</button>" +
 			"<button type='button' class='btn btn-default' data-dismiss='modal'>Cancel</button>";
-			
-			$("#dialog_modal .modal-title").toggleClass("text-danger", false);
-			$("#dialog_modal .modal-title").text("Test Pathfinding");
-			$("#dialog_modal .modal-body").html(menuHTML);
-			$("#dialog_modal .modal-footer").html(footerButtonsHTML);
-			$('#dialog_modal').modal('toggle');
+
+		$("#dialog_modal .modal-title").toggleClass("text-danger", false);
+		$("#dialog_modal .modal-title").text("Test Pathfinding");
+		$("#dialog_modal .modal-body").html(menuHTML);
+		$("#dialog_modal .modal-footer").html(footerButtonsHTML);
+		$('#dialog_modal').modal('toggle');
 	}
 }
 
 function findPathSelected() {
 	showingPath = true;
-	if($("#findPathTo option:selected").text() == "closest_bathroom_mens") {
+	if ($("#findPathTo option:selected").text() == "closest_bathroom_mens") {
 		var closestBathroom = getClosestBathroomMens(getMarkerFromId($("#findPathFrom option:selected").text()));
-		if(closestBathroom != null) {
+		if (closestBathroom != null) {
 			findPath($("#findPathFrom option:selected").text(), closestBathroom.data(GlobalStrings.ID));
 		}
-	} else if($("#findPathTo option:selected").text() == "closest_bathroom_womens"){
+	} else if ($("#findPathTo option:selected").text() == "closest_bathroom_womens") {
 		var closestBathroom = getClosestBathroomWomens(getMarkerFromId($("#findPathFrom option:selected").text()));
-		if(closestBathroom != null) {
+		if (closestBathroom != null) {
 			findPath($("#findPathFrom option:selected").text(), closestBathroom.data(GlobalStrings.ID));
 		}
-	} else if($("#findPathTo option:selected").text() == "dion_building") {
+	} else if ($("#findPathTo option:selected").text() == "dion_building") {
 		var path = getPathToBuilding(allMarkers, pathMap, graph, $("#findPathFrom option:selected").text(), "dion");
-		findPath(path[0], path[path.length-1]);
+		findPath(path[0], path[path.length - 1]);
 	} else {
 		findPath($("#findPathFrom option:selected").text(), $("#findPathTo option:selected").text());
 	}
@@ -2449,9 +2306,9 @@ function findPathSelected() {
 
 function findPath(marker1ID, marker2ID) {
 	var start = new Date().getTime();
-	debug("Getting shortest path from " + marker1ID + " to " + marker2ID);
+	LOG.debug("Getting shortest path from " + marker1ID + " to " + marker2ID);
 	var path = graph.shortestPath("" + marker1ID + "", "" + marker2ID + "").concat(["" + marker1ID + ""]).reverse();
-	debug(path);
+	LOG.debug(path);
 
 	executeOnAllMarkers(function(marker) {
 		marker.stop();
@@ -2483,9 +2340,9 @@ function findPath(marker1ID, marker2ID) {
 		// marker.animate(animation);
 
 		if (i < path.length - 1) {
-			var pathObject = pathMap.get(path[i] + "<->" + path[i+1]);
-			if(pathObject == null) {
-				pathObject = pathMap.get(path[i+1] + "<->" + path[i]);
+			var pathObject = pathMap.get(path[i] + "<->" + path[i + 1]);
+			if (pathObject == null) {
+				pathObject = pathMap.get(path[i + 1] + "<->" + path[i]);
 			}
 			var pathElement = pathObject.element;
 
@@ -2495,8 +2352,8 @@ function findPath(marker1ID, marker2ID) {
 			}
 		}
 	}
-	
-	stats("Took " + (new Date().getTime() - start) + " ms to find and show path from " + marker1ID + " to " + marker2ID);
+
+	LOG.trace("Took " + (new Date().getTime() - start) + " ms to find and show path from " + marker1ID + " to " + marker2ID);
 }
 
 function executeOnAllMarkers(func) {
@@ -2533,7 +2390,7 @@ function testForBadPaths() {
 	} else {
 		generateGraph();
 		if (graph != null) {
-			info("Testing for bad paths...");
+			LOG.info("Testing for bad paths...");
 			testingForBadPaths = true;
 			disableAllButtons();
 
@@ -2549,8 +2406,8 @@ function testForBadPaths() {
 				roomMap.forEach(function(markerToID, markerTo) {
 					if (!testedIdSet.contains(markerToID) && markerFromID != markerToID) {
 						var path = graph.shortestPath("" + markerFromID + "", "" + markerToID + "").concat(["" + markerFromID + ""]).reverse();
-						if(path.length == 1) {
-							error("There is no path from " + markerFromID + " to " + markerToID);
+						if (path.length == 1) {
+							LOG.error("There is no path from " + markerFromID + " to " + markerToID);
 							badPaths++;
 						}
 						// path[0] and path[path.length-1]
@@ -2562,7 +2419,7 @@ function testForBadPaths() {
 						// 	}
 						// }
 						// if (roomCount > 1) {
-						// 	error("Path from " + markerFromID + " to " + markerToID + " goes through " + roomCount + " other rooms. " + path);
+						// 	LOG.error("Path from " + markerFromID + " to " + markerToID + " goes through " + roomCount + " other rooms. " + path);
 						// 	badPaths++;
 						// 	var pathColor = '#' + Math.floor(Math.random() * 16777215).toString(16);
 						// 	for (var i = 0; i < path.length; i++) {
@@ -2603,13 +2460,13 @@ function testForBadPaths() {
 
 				idToTestedIdSetMap.set(markerFromID, testedIdSet);
 			});
-			stats("Testing for bad paths complete. Found " + badPaths + " bad paths. Took " + (new Date().getTime() - start) + " ms");
+			LOG.trace("Testing for bad paths complete. Found " + badPaths + " bad paths. Took " + (new Date().getTime() - start) + " ms");
 
 			$("#testing_dropdown").toggle();
 			$("#exit_testing_button").toggle();
 			disableAllButtonsExcept("exit_testing_button");
 		} else {
-			warn("Graph is null! Cannot test for bad paths");
+			LOG.warn("Graph is null! Cannot test for bad paths");
 		}
 	}
 }
@@ -2619,32 +2476,32 @@ function pop() {
 		"Use this form to select and format the type of marker to plot" +
 		"<div class='form-group'>" +
 		"<label for='selector'>Type</label>" +
-	"<select id='selector' name='marker_type' class='form-control' form='marker_form'>";
-	
-	GlobalStrings.forEachMarkerStringPair(function(normal, display){
+		"<select id='selector' name='marker_type' class='form-control' form='marker_form'>";
+
+	GlobalStrings.forEachMarkerStringPair(function(normal, display) {
 		markerFormContent += "<option id='" + normal + "' " + (selectedMarkerType == normal ? "selected='true'" : "") + ">" + display + "</option>";
 	});
-	
+
 	markerFormContent += "</select>" +
 		"</div>" +
 		"<div class='form-group'>" +
 		"<label for='color_selector'>Color</label>" +
-	"<select id='color_selector' class='form-control' style='background-color: " + getMarkerColorFromType(selectedMarkerType) + "'>";
-	
-	GlobalStrings.COLOR.forEachStringPair(function(normal, display){
+		"<select id='color_selector' class='form-control' style='background-color: " + getMarkerColorFromType(selectedMarkerType) + "'>";
+
+	GlobalStrings.COLOR.forEachStringPair(function(normal, display) {
 		markerFormContent += "<option id='" + normal + "' " + (getMarkerColorFromType(selectedMarkerType) == normal ? "selected='true'" : "") + ">" + display + "</option>";
 	});
-	
+
 	markerFormContent += "</select>" +
 		"</div>" +
-	"<div class='form-group'>" + 
-	"<input class='btn btn-default btn-block' type='button' value='OK' onclick='hideMarkerPopover()'>" +
-	"</div>" + 
-	"</form>";
+		"<div class='form-group'>" +
+		"<input class='btn btn-default btn-block' type='button' value='OK' onclick='hideMarkerPopover()'>" +
+		"</div>" +
+		"</form>";
 
 	if (!markerFormShowing) {
 		$("#plot_markers_popover").attr("data-content", markerFormContent);
-		
+
 		var popoverCaretUp = "Plot Markers <span class='dropup'><span class='caret'></span></span>";
 		$("#plot_markers_popover").html(popoverCaretUp);
 	} else {
@@ -2657,13 +2514,13 @@ function pop() {
 function markerFormChanged() {
 	var markerType = GlobalStrings.getNormalFromDisplay($("#selector").val());
 	var markerColor = getMarkerColorFromType(markerType);
-	if(markerType == selectedMarkerType) {
+	if (markerType == selectedMarkerType) {
 		// Marker's color changed
 		markerColor = GlobalStrings.getNormalFromDisplay($("#color_selector").val());
 		markerTypeToColorMap.set(selectedMarkerType, markerColor);
-		
+
 		var markerMap = getMarkerMapForType(markerType);
-		markerMap.forEach(function(markerId, marker){
+		markerMap.forEach(function(markerId, marker) {
 			marker.attr("fill", markerColor);
 		});
 	}
@@ -2671,32 +2528,32 @@ function markerFormChanged() {
 	plotSelect(selectedMarkerType);
 	$("#color_selector").css("background-color", markerColor);
 	$("#color_selector").val(GlobalStrings.getDisplayFromNormal(markerColor));
-	
-	switch(selectedMarkerType) {
-	case GlobalStrings.ROOM:
-		currentlyPlotting = plottingRoom;
-		break;
-	case GlobalStrings.DOOR:
-		currentlyPlotting = plottingDoor;
-		break;
-	case GlobalStrings.HALLWAY:
-		currentlyPlotting = plottingHallway;
-		break;
-	case GlobalStrings.PATHWAY:
-		currentlyPlotting = plottingPathway;
-		break;
-	case GlobalStrings.STAIR:
-		currentlyPlotting = plottingStair;
-		break;
-	case GlobalStrings.ELEVATOR:
-		currentlyPlotting = plottingElevator;
-		break;
-	case GlobalStrings.BATHROOM_MENS:
-		currentlyPlotting = plottingBathroomMens;
-		break;
-	case GlobalStrings.BATHROOM_WOMENS:
-		currentlyPlotting = plottingBathroomWomens;
-		break;
+
+	switch (selectedMarkerType) {
+		case GlobalStrings.ROOM:
+			currentlyPlotting = plottingRoom;
+			break;
+		case GlobalStrings.DOOR:
+			currentlyPlotting = plottingDoor;
+			break;
+		case GlobalStrings.HALLWAY:
+			currentlyPlotting = plottingHallway;
+			break;
+		case GlobalStrings.PATHWAY:
+			currentlyPlotting = plottingPathway;
+			break;
+		case GlobalStrings.STAIR:
+			currentlyPlotting = plottingStair;
+			break;
+		case GlobalStrings.ELEVATOR:
+			currentlyPlotting = plottingElevator;
+			break;
+		case GlobalStrings.BATHROOM_MENS:
+			currentlyPlotting = plottingBathroomMens;
+			break;
+		case GlobalStrings.BATHROOM_WOMENS:
+			currentlyPlotting = plottingBathroomWomens;
+			break;
 	}
 }
 
@@ -2711,53 +2568,53 @@ function changeBuildingFloor() {
 	var buildingFloorContent = "<form id='change_building_floor_form' onchange='changeBuildingFloorChanged()' style='width: 244px'>" +
 		"<div class='form-group'>" +
 		"<label for='building_selector'>Building</label>" +
-	"<select id='building_selector' name='building' class='form-control'>" + 
-	"<option id='"+GlobalStrings.ALL_BUILDINGS+"' " + (currentBuilding ==  GlobalStrings.ALL_BUILDINGS ? "selected='true'" : "") + ">"+GlobalStrings.ALL_BUILDINGS+"</option>";
-	buildingToFloorMap.forEach(function(building, floorToShapeListMap){
+		"<select id='building_selector' name='building' class='form-control'>" +
+		"<option id='" + GlobalStrings.ALL_BUILDINGS + "' " + (currentBuilding == GlobalStrings.ALL_BUILDINGS ? "selected='true'" : "") + ">" + GlobalStrings.ALL_BUILDINGS + "</option>";
+	buildingToFloorMap.forEach(function(building, floorToShapeListMap) {
 		buildingFloorContent += "<option id='" + building + "' " + (currentBuilding == building ? "selected='true'" : "") + ">" + shortToLongNameMap.get(building) + "</option>";
 	});
-	
+
 	buildingFloorContent += "</select>" +
 		"</div>" +
 		"<div class='form-group'>" +
 		"<label for='floor_selector'>Floor</label>" +
-	"<select id='floor_selector' class='form-control'>";
-	
-	if(currentBuilding == GlobalStrings.ALL_BUILDINGS) {
+		"<select id='floor_selector' class='form-control'>";
+
+	if (currentBuilding == GlobalStrings.ALL_BUILDINGS) {
 		var lowFloor;
 		var topFloor;
 		buildingToFloorMap.forEach(function(building, floorToShapeListMap) {
 			floorToShapeListMap.forEach(function(floor, shapeList) {
-				if(lowFloor == null || floor < lowFloor) {
+				if (lowFloor == null || floor < lowFloor) {
 					lowFloor = floor;
 				}
-				if(topFloor == null || floor > topFloor) {
+				if (topFloor == null || floor > topFloor) {
 					topFloor = floor;
 				}
 			});
 		});
-		if(lowFloor != null && topFloor != null) {
-			for(var i = lowFloor; i <= topFloor; i++) {
+		if (lowFloor != null && topFloor != null) {
+			for (var i = lowFloor; i <= topFloor; i++) {
 				var floor = i;
 				buildingFloorContent += "<option id='" + floor + "' " + (currentFloor == floor ? "selected='true'" : "") + ">" + floor + "</option>";
 			}
 		}
 	} else {
-		buildingToFloorMap.get(currentBuilding).forEach(function(floor, shapeList){
+		buildingToFloorMap.get(currentBuilding).forEach(function(floor, shapeList) {
 			buildingFloorContent += "<option id='" + floor + "' " + (currentFloor == floor ? "selected='true'" : "") + ">" + floor + "</option>";
 		});
 	}
-	
+
 	buildingFloorContent += "</select>" +
 		"</div>" +
-	"<div class='form-group'>" + 
-	"<input class='btn btn-default btn-block' type='button' value='OK' onclick='hideChangeBuildingFloorPopover()'>" +
-	"</div>" + 
-	"</form>";
-	
+		"<div class='form-group'>" +
+		"<input class='btn btn-default btn-block' type='button' value='OK' onclick='hideChangeBuildingFloorPopover()'>" +
+		"</div>" +
+		"</form>";
+
 	if (!changeBuildingFloorShowing) {
 		$("#change_building_floor_popover").attr("data-content", buildingFloorContent);
-		
+
 		var popoverCaretUp = "Change Building/Floor <span class='dropup'><span class='caret'></span></span>";
 		$("#change_building_floor_popover").html(popoverCaretUp);
 	} else {
@@ -2776,31 +2633,31 @@ function hideChangeBuildingFloorPopover() {
 
 function changeBuildingFloorChanged() {
 	var selectedBuilding;
-	shortToLongNameMap.forEach(function(short, long){
-		if(long == $("#building_selector").val()) {
+	shortToLongNameMap.forEach(function(short, long) {
+		if (long == $("#building_selector").val()) {
 			selectedBuilding = short;
 			return false;
 		}
 	});
 	var selectedFloor = $("#floor_selector").val();
-	if(selectedBuilding != currentBuilding) {
-		if(selectedBuilding != GlobalStrings.ALL_BUILDINGS) {
+	if (selectedBuilding != currentBuilding) {
+		if (selectedBuilding != GlobalStrings.ALL_BUILDINGS) {
 			// Building changed. Try to stay on same floor but different building. Else try for B of building, then 1st floor etc.
 			var newFloor;
-			buildingToFloorMap.get(selectedBuilding).forEach(function(floor, shapeList){
-				if(newFloor == null) {
+			buildingToFloorMap.get(selectedBuilding).forEach(function(floor, shapeList) {
+				if (newFloor == null) {
 					newFloor = floor;
 				} else {
-					if(floor == selectedFloor) {
+					if (floor == selectedFloor) {
 						newFloor = selectedFloor;
 					} else {
-						if(floor == "B" || floor == "1") {
+						if (floor == "B" || floor == "1") {
 							newFloor = floor;
 						}
 					}
 				}
 			});
-			
+
 			currentFloor = newFloor;
 		}
 
@@ -2809,28 +2666,28 @@ function changeBuildingFloorChanged() {
 		// Floor changed
 		currentFloor = selectedFloor;
 	}
-	
+
 	showShapesForCurrentBuildingAndFloor();
 }
 
 function showShapesForBuildingAndFloor(building, floor) {
-	debug("Showing shapes for building " + building + " and floor " + floor);
+	LOG.debug("Showing shapes for building " + building + " and floor " + floor);
 	paperX = 999999;
 	paperY = 999999;
 	var lowerRightX = -999999;
 	var lowerRightY = -999999;
 	var showAllBuildings = (building == GlobalStrings.ALL_BUILDINGS);
-	buildingToFloorMap.forEach(function(bldg, floorToShapeListMap){
-		floorToShapeListMap.forEach(function(flr, shapeListAndNameMap){
+	buildingToFloorMap.forEach(function(bldg, floorToShapeListMap) {
+		floorToShapeListMap.forEach(function(flr, shapeListAndNameMap) {
 			var shapeList = shapeListAndNameMap.get("shapes");
 			var nameList = shapeListAndNameMap.get("names");
-			shapeList.forEach(function(shape){
-				if((showAllBuildings || building == bldg) && floor == flr) {
+			shapeList.forEach(function(shape) {
+				if ((showAllBuildings || building == bldg) && floor == flr) {
 					shape.show();
 				} else {
 					shape.hide();
 				}
-				
+
 				if (showAllBuildings || (building == bldg && floor == flr)) {
 					var bbox = shape.getBBox();
 					if (bbox.x < paperX) {
@@ -2848,8 +2705,8 @@ function showShapesForBuildingAndFloor(building, floor) {
 				}
 
 			});
-			nameList.forEach(function(name){
-				if((showAllBuildings || building == bldg) && floor == flr) {
+			nameList.forEach(function(name) {
+				if ((showAllBuildings || building == bldg) && floor == flr) {
 					name.show();
 				} else {
 					name.hide();
@@ -2857,22 +2714,22 @@ function showShapesForBuildingAndFloor(building, floor) {
 			});
 		});
 	});
-	
-	paperShiftX = paperX;
-	paperShiftY = paperY;
+
+	paperShiftX = Math.floor(paperX);
+	paperShiftY = Math.floor(paperY);
 	paper.setViewBox(paperX, paperY, paper.width, paper.height, false);
-	
-	executeOnAllMarkers(function(marker){
-		if(marker.data(GlobalStrings.TYPE) != GlobalStrings.PATHWAY) {
-			if(marker.data(GlobalStrings.TYPE) != GlobalStrings.STAIR && marker.data(GlobalStrings.TYPE) != GlobalStrings.ELEVATOR) {
-				if((showAllBuildings || marker.data(GlobalStrings.BUILDING) == currentBuilding) && marker.data(GlobalStrings.FLOOR) == currentFloor) {
+
+	executeOnAllMarkers(function(marker) {
+		if (marker.data(GlobalStrings.TYPE) != GlobalStrings.PATHWAY) {
+			if (marker.data(GlobalStrings.TYPE) != GlobalStrings.STAIR && marker.data(GlobalStrings.TYPE) != GlobalStrings.ELEVATOR) {
+				if ((showAllBuildings || marker.data(GlobalStrings.BUILDING) == currentBuilding) && marker.data(GlobalStrings.FLOOR) == currentFloor) {
 					marker.show();
 				} else {
 					marker.hide();
 				}
 			} else {
 				// Stairs and elevators just show if in the current building
-				if((showAllBuildings || marker.data(GlobalStrings.BUILDING) == currentBuilding)) {
+				if ((showAllBuildings || marker.data(GlobalStrings.BUILDING) == currentBuilding)) {
 					marker.show();
 				} else {
 					marker.hide();
@@ -2880,19 +2737,65 @@ function showShapesForBuildingAndFloor(building, floor) {
 			}
 		}
 	});
-	
-	pathMap.forEach(function(pathString, path){
-		if(((showAllBuildings || path.marker1Data.building == currentBuilding) && path.marker1Data.floor == currentFloor) || 
-		   ((showAllBuildings || path.marker2Data.building == currentBuilding) && path.marker2Data.floor == currentFloor)) {
-				
-			   	path.element.show();
-			} else {
-				path.element.hide();
-			}
+
+	pathMap.forEach(function(pathString, path) {
+		if (((showAllBuildings || path.marker1Data.building == currentBuilding) && path.marker1Data.floor == currentFloor) ||
+			((showAllBuildings || path.marker2Data.building == currentBuilding) && path.marker2Data.floor == currentFloor)) {
+
+			path.element.show();
+		} else {
+			path.element.hide();
+		}
 	});
 }
 
 function showShapesForCurrentBuildingAndFloor() {
-	debug("Showing shapes for current building and floor");
+	LOG.debug("Showing shapes for current building and floor");
 	showShapesForBuildingAndFloor(currentBuilding, currentFloor);
+}
+
+function idIsType(id, type) {
+	switch (type) {
+		case GlobalStrings.ROOM:
+			if (id.lastIndexOf(GlobalStrings.ROOM_ID + "_") > -1) {
+				return true;
+			}
+			break;
+		case GlobalStrings.DOOR:
+			if (id.lastIndexOf(GlobalStrings.DOOR_ID + "_") > -1) {
+				return true;
+			}
+			break;
+		case GlobalStrings.HALLWAY:
+			if (id.lastIndexOf(GlobalStrings.HALLWAY_ID) + "_" > -1) {
+				return true;
+			}
+			break;
+		case GlobalStrings.PATHWAY:
+			if (id.lastIndexOf(GlobalStrings.PATHWAY_ID + "_") > -1) {
+				return true;
+			}
+			break;
+		case GlobalStrings.STAIR:
+			if (id.lastIndexOf(GlobalStrings.STAIR_ID + "_") > -1) {
+				return true;
+			}
+			break;
+		case GlobalStrings.ELEVATOR:
+			if (id.lastIndexOf(GlobalStrings.ELEVATOR_ID + "_") > -1) {
+				return true;
+			}
+			break;
+		case GlobalStrings.BATHROOM_MENS:
+			if (id.lastIndexOf(GlobalStrings.BATHROOM_MENS_ID + "_") > -1) {
+				return true;
+			}
+			break;
+		case GlobalStrings.BATHROOM_WOMENS:
+			if (id.lastIndexOf(GlobalStrings.BATHROOM_WOMENS_ID + "_") > -1) {
+				return true;
+			}
+			break;
+	}
+	return false;
 }

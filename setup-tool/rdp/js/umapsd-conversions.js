@@ -164,35 +164,28 @@ function createAllMarkersFromJson(json, paper) {
 			}
 			
 			var getTypeFromId = function(id) {
-				if(id.search("pathway") == -1) {
+				if(id.search(GlobalStrings.PATHWAY_ID) == -1) {
 					var parts = id.split("_");
-					if(parts[0] == "bldg") {
-						if(parts[2] == "flr") {
+					if(parts[0] == GlobalStrings.BUILDING_ID) {
+						if(parts[2] == GlobalStrings.FLOOR_ID) {
 							var type;
-							switch(parts[4]) {
-							case "rm":
+							var typeId = parts[4];
+							if(typeId == GlobalStrings.ROOM_ID) {
 								type = GlobalStrings.ROOM;
-								break;
-							case "dr":
+							} else if(typeId == GlobalStrings.DOOR_ID) {
 								type = GlobalStrings.DOOR;
-								break;
-							case "hw":
+							} else if(typeId == GlobalStrings.HALLWAY_ID) {
 								type = GlobalStrings.HALLWAY;
-								break;
-							case "st":
+							} else if(typeId == GlobalStrings.STAIR_ID) {
 								type = GlobalStrings.STAIR;
-								break;
-							case "el":
+							} else if(typeId == GlobalStrings.ELEVATOR_ID) {
 								type = GlobalStrings.ELEVATOR;
-								break;
-							case "bathroom":
-								if(parts[5] == "mens") {
-									type = GlobalStrings.BATHROOM_MENS;
-								} else {
-									type = GlobalStrings.BATHROOM_WOMENS;
-								}
-								break;
+							} else if((typeId + "_" + parts[5]) == GlobalStrings.BATHROOM_MENS_ID) {
+								type = GlobalStrings.BATHROOM_MENS_ID;
+							} else if((typeId + "_" + parts[5]) == GlobalStrings.BATHROOM_WOMENS_ID) {
+								type = GlobalStrings.BATHROOM_WOMENS_ID;
 							}
+							
 							return type;
 						}
 					}
@@ -202,9 +195,9 @@ function createAllMarkersFromJson(json, paper) {
 			}
 			
 			var getBuildingFromId = function(id) {
-				if(id.search("pathway") == -1) {
+				if(id.search(GlobalStrings.PATHWAY_ID) == -1) {
 					var parts = id.split("_");
-					if(parts[0] == "bldg") {
+					if(parts[0] == GlobalStrings.BUILDING_ID) {
 						return parts[1];
 					}
 				} else {
@@ -213,10 +206,10 @@ function createAllMarkersFromJson(json, paper) {
 			}
 			
 			var getFloorFromId = function(id) {
-				if(id.search("pathway") == -1) {
+				if(id.search(GlobalStrings.PATHWAY_ID) == -1) {
 					var parts = id.split("_");
-					if(parts[0] == "bldg") {
-						if(parts[2] == "flr") {
+					if(parts[0] == GlobalStrings.BUILDING_ID) {
+						if(parts[2] == GlobalStrings.FLOOR_ID) {
 							return parts[3];
 						}
 					}
@@ -285,35 +278,28 @@ function createAllPathsFromJson(json, paper) {
 			}
 			
 			var getTypeFromId = function(id) {
-				if(id.search("pathway") == -1) {
+				if(id.search(GlobalStrings.PATHWAY_ID) == -1) {
 					var parts = id.split("_");
-					if(parts[0] == "bldg") {
-						if(parts[2] == "flr") {
+					if(parts[0] == GlobalStrings.BUILDING_ID) {
+						if(parts[2] == GlobalStrings.FLOOR_ID) {
 							var type;
-							switch(parts[4]) {
-							case "rm":
+							var typeId = parts[4];
+							if(typeId == GlobalStrings.ROOM_ID) {
 								type = GlobalStrings.ROOM;
-								break;
-							case "dr":
+							} else if(typeId == GlobalStrings.DOOR_ID) {
 								type = GlobalStrings.DOOR;
-								break;
-							case "hw":
+							} else if(typeId == GlobalStrings.HALLWAY_ID) {
 								type = GlobalStrings.HALLWAY;
-								break;
-							case "st":
+							} else if(typeId == GlobalStrings.STAIR_ID) {
 								type = GlobalStrings.STAIR;
-								break;
-							case "el":
+							} else if(typeId == GlobalStrings.ELEVATOR_ID) {
 								type = GlobalStrings.ELEVATOR;
-								break;
-							case "bathroom":
-								if(parts[5] == "mens") {
-									type = GlobalStrings.BATHROOM_MENS;
-								} else {
-									type = GlobalStrings.BATHROOM_WOMENS;
-								}
-								break;
+							} else if((typeId + "_" + parts[5]) == GlobalStrings.BATHROOM_MENS_ID) {
+								type = GlobalStrings.BATHROOM_MENS_ID;
+							} else if((typeId + "_" + parts[5]) == GlobalStrings.BATHROOM_WOMENS_ID) {
+								type = GlobalStrings.BATHROOM_WOMENS_ID;
 							}
+							
 							return type;
 						}
 					}
@@ -323,9 +309,9 @@ function createAllPathsFromJson(json, paper) {
 			}
 			
 			var getBuildingFromId = function(id) {
-				if(id.search("pathway") == -1) {
+				if(id.search(GlobalStrings.PATHWAY_ID) == -1) {
 					var parts = id.split("_");
-					if(parts[0] == "bldg") {
+					if(parts[0] == GlobalStrings.BUILDING_ID) {
 						return parts[1];
 					}
 				} else {
@@ -334,10 +320,10 @@ function createAllPathsFromJson(json, paper) {
 			}
 			
 			var getFloorFromId = function(id) {
-				if(id.search("pathway") == -1) {
+				if(id.search(GlobalStrings.PATHWAY_ID) == -1) {
 					var parts = id.split("_");
-					if(parts[0] == "bldg") {
-						if(parts[2] == "flr") {
+					if(parts[0] == GlobalStrings.BUILDING_ID) {
+						if(parts[2] == GlobalStrings.FLOOR_ID) {
 							return parts[3];
 						}
 					}
@@ -348,7 +334,6 @@ function createAllPathsFromJson(json, paper) {
 
 			var makePath = function(marker1Data, marker2Data, distance, paper) {
 				var path = paper.path("M" + marker1Data.cx + " " + marker1Data.cy + "L" + marker2Data.cx + " " + marker2Data.cy);
-				path.toBack();
 				path.attr("stroke-width", pathStrokeWidthToUse);
 				var pathObject = new Path(path, marker1Data, marker2Data, distance);
 
