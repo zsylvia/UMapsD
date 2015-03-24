@@ -147,6 +147,8 @@ var plottingElevator = 5;
 var plottingBathroomMens = 6;
 var plottingBathroomWomens = 7;
 
+var shortToLongNameMap = new buckets.Dictionary();
+
 var markerTypeToColorMap = new buckets.Dictionary();
 markerTypeToColorMap.set(GlobalStrings.ROOM, GlobalStrings.COLOR.RED);
 markerTypeToColorMap.set(GlobalStrings.DOOR, GlobalStrings.COLOR.BLUE);
@@ -254,6 +256,10 @@ var graph;
 
 var paperShiftX = 0;
 var paperShiftY = 0;
+
+var markerFormShowing = false;
+var selectedMarkerType = GlobalStrings.ROOM;
+var changeBuildingFloorShowing = false;
 
 var statsOn = true;
 var debugOn = true;
@@ -600,6 +606,7 @@ $(document).ready(function() {
 			var shapesCount = 0;
 
 			for(var i = 0; i < dictionary.buildings.length; i++) {
+				shortToLongNameMap.set(dictionary.buildings[i].short_id, dictionary.buildings[i].full_id);
 				var floorToShapeListAndNameMap = buildingToFloorMap.get(dictionary.buildings[i].short_id);
 				if(floorToShapeListAndNameMap == null) {
 					floorToShapeListAndNameMap = new buckets.Dictionary();
@@ -879,7 +886,16 @@ function loadGraphData(json) {
 		var marker1 = getMarkerFromId(path.marker1Data.id);
 		if(marker1 == null) {
 			marker1 = addMarker(path.marker1Data.cx, path.marker1Data.cy, markerTypeToColorMap.get(path.marker1Data.type));
-			marker1.data(GlobalStrings.ID, path.marker1Data.id);
+			marker1.data(GlobalStrings.ID, path.marker1Data.id);	
+			if(path.marker1Data.type == GlobalStrings.ROOM || path.marker1Data.type == GlobalStrings.BATHROOM_MENS || path.marker1Data.type == GlobalStrings.BATHROOM_WOMENS) {
+				buildingToFloorMap.get(path.marker1Data.building).get(path.marker1Data.floor).get("shapes").forEach(function(element){
+					if(element.data(GlobalStrings.ID) != "outline" && element.isPointInside(marker1.attr("cx"), marker1.attr("cy"))) {
+						marker1.data(GlobalStrings.ID, element.data(GlobalStrings.ID));
+						path.marker1Data.id = marker1.data(GlobalStrings.ID);
+						return false;
+					}
+				});
+			}
 			marker1.data(GlobalStrings.TYPE, path.marker1Data.type);
 			if(path.marker1Data.type != GlobalStrings.PATHWAY) {
 				marker1.data(GlobalStrings.BUILDING, path.marker1Data.building);
@@ -909,6 +925,16 @@ function loadGraphData(json) {
 		if(marker2 == null) {
 			marker2 = addMarker(path.marker2Data.cx, path.marker2Data.cy, markerTypeToColorMap.get(path.marker2Data.type));
 			marker2.data(GlobalStrings.ID, path.marker2Data.id);
+			marker2.data(GlobalStrings.ID, path.marker2Data.id);	
+			if(path.marker2Data.type == GlobalStrings.ROOM || path.marker2Data.type == GlobalStrings.BATHROOM_MENS || path.marker2Data.type == GlobalStrings.BATHROOM_WOMENS) {
+				buildingToFloorMap.get(path.marker2Data.building).get(path.marker2Data.floor).get("shapes").forEach(function(element){
+					if(element.data(GlobalStrings.ID) != "outline" && element.isPointInside(marker2.attr("cx"), marker2.attr("cy"))) {
+						marker2.data(GlobalStrings.ID, element.data(GlobalStrings.ID));
+						path.marker2Data.id = marker2.data(GlobalStrings.ID);
+						return false;
+					}
+				});
+			}
 			marker2.data(GlobalStrings.TYPE, path.marker2Data.type);
 			if(path.marker2Data.type != GlobalStrings.PATHWAY) {
 				marker2.data(GlobalStrings.BUILDING, path.marker2Data.building);
@@ -1322,10 +1348,10 @@ function plotMarker(x, y, element) {
 				marker = plotElevator(x, y, currentBuilding, currentFloor);
 				break;
 			case plottingBathroomMens:
-				marker = plotBathroomMens(x, y, currentBuilding, currentFloor);
+				marker = plotBathroomMens(x, y, currentBuilding, currentFloor, element.data(GlobalStrings.ID));
 				break;
 			case plottingBathroomWomens:
-				marker = plotBathroomWomens(x, y, currentBuilding, currentFloor);
+				marker = plotBathroomWomens(x, y, currentBuilding, currentFloor, element.data(GlobalStrings.ID));
 				break;
 		}
 	
@@ -1339,31 +1365,31 @@ function plotMarker(x, y, element) {
 }
 
 function plotRoom(x, y, building, floor, elementId) {
-	var roomId = formatRoomId(building, floor, elementId);
-
-	info("Plotting new room " + roomId + " at (" + x + "," + y + ")");
+	var roomId = elementId;
+	
+	var marker = null;
 
 	var addToUndoStackHolder = addToUndoStack;
 	addToUndoStack = false;
 
-	marker = addMarker(x, y, markerTypeToColorMap.get(GlobalStrings.ROOM));
-
-	addToUndoStack = addToUndoStackHolder;
-
-	marker.data(GlobalStrings.ID, formatRoomId(building, floor, elementId));
-	marker.data(GlobalStrings.BUILDING, building);
-	marker.data(GlobalStrings.FLOOR, floor);
-	marker.data(GlobalStrings.TYPE, GlobalStrings.ROOM);
-	if (roomMap.containsKey(marker.data(GlobalStrings.ID))) {
+	if (roomMap.containsKey(roomId)) {
 		addToUndoStackHolder = addToUndoStack;
 		addToUndoStack = false;
-
-		marker.remove();
-
 		addToUndoStack = addToUndoStackHolder;
 
 		alertDialog("There is already a marker for this room");
 	} else {
+		info("Plotting new room " + roomId + " at (" + x + "," + y + ")");
+		
+		marker = addMarker(x, y, markerTypeToColorMap.get(GlobalStrings.ROOM));
+
+		addToUndoStack = addToUndoStackHolder;
+
+		marker.data(GlobalStrings.ID, roomId);
+		marker.data(GlobalStrings.BUILDING, building);
+		marker.data(GlobalStrings.FLOOR, floor);
+		marker.data(GlobalStrings.TYPE, GlobalStrings.ROOM);
+		
 		roomMap.set(marker.data(GlobalStrings.ID), marker);
 	}
 
@@ -1438,8 +1464,9 @@ function plotElevator(x, y, building, floor) {
 	return marker;
 }
 
-function plotBathroomMens(x, y, building, floor) {
-	var id = formatBathroomMensId(building, floor);
+function plotBathroomMens(x, y, building, floor, elementId) {
+	// var id = formatBathroomMensId(building, floor);
+	var id = elementId;
 	info("Plotting new men's bathroom " + id + " at (" + x + "," + y + ")");
 	marker = addMarker(x, y, markerTypeToColorMap.get(GlobalStrings.BATHROOM_MENS));
 	marker.data(GlobalStrings.ID, id);
@@ -1451,8 +1478,9 @@ function plotBathroomMens(x, y, building, floor) {
 	return marker;
 }
 
-function plotBathroomWomens(x, y, building, floor) {
-	var id = formatBathroomWomensId(building, floor);
+function plotBathroomWomens(x, y, building, floor, elementId) {
+	// var id = formatBathroomWomensId(building, floor);
+	var id = elementId;
 	info("Plotting new women's bathroom " + id + " at (" + x + "," + y + ")");
 	marker = addMarker(x, y, markerTypeToColorMap.get(GlobalStrings.BATHROOM_WOMENS));
 	marker.data(GlobalStrings.ID, id);
@@ -2586,9 +2614,6 @@ function testForBadPaths() {
 	}
 }
 
-var markerFormShowing = false;
-var selectedMarkerType = GlobalStrings.ROOM;
-var changeBuildingFloorShowing = false;
 function pop() {
 	var markerFormContent = "<form id='marker_form' onchange='markerFormChanged()' style='width: 244px'>" +
 		"Use this form to select and format the type of marker to plot" +
@@ -2689,7 +2714,7 @@ function changeBuildingFloor() {
 	"<select id='building_selector' name='building' class='form-control'>" + 
 	"<option id='"+GlobalStrings.ALL_BUILDINGS+"' " + (currentBuilding ==  GlobalStrings.ALL_BUILDINGS ? "selected='true'" : "") + ">"+GlobalStrings.ALL_BUILDINGS+"</option>";
 	buildingToFloorMap.forEach(function(building, floorToShapeListMap){
-		buildingFloorContent += "<option id='" + building + "' " + (currentBuilding == building ? "selected='true'" : "") + ">" + building + "</option>";
+		buildingFloorContent += "<option id='" + building + "' " + (currentBuilding == building ? "selected='true'" : "") + ">" + shortToLongNameMap.get(building) + "</option>";
 	});
 	
 	buildingFloorContent += "</select>" +
@@ -2750,7 +2775,13 @@ function hideChangeBuildingFloorPopover() {
 }
 
 function changeBuildingFloorChanged() {
-	var selectedBuilding = $("#building_selector").val();
+	var selectedBuilding;
+	shortToLongNameMap.forEach(function(short, long){
+		if(long == $("#building_selector").val()) {
+			selectedBuilding = short;
+			return false;
+		}
+	});
 	var selectedFloor = $("#floor_selector").val();
 	if(selectedBuilding != currentBuilding) {
 		if(selectedBuilding != GlobalStrings.ALL_BUILDINGS) {
