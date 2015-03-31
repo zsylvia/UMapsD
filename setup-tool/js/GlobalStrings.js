@@ -2,6 +2,7 @@ var GlobalStrings = {
 	ID: "id",
 	TYPE: "type",
 	ALL_BUILDINGS: "all_buildings",
+	ALL_BUILDINGS_DISPLAY: "All Buildings",
 	
 	FLOOR: "floor",
 	BUILDING: "building",
@@ -33,8 +34,8 @@ var GlobalStrings = {
 	PATHWAY_ID: "pw",
 	STAIR_ID: "st",
 	ELEVATOR_ID: "el",
-	BATHROOM_MENS_ID: "br_m",
-	BATHROOM_WOMENS_ID: "br_w",
+	BATHROOM_MENS_ID: "brm",
+	BATHROOM_WOMENS_ID: "brw",
 	
 	COLOR: {
 		RED: "red",
@@ -69,6 +70,7 @@ var GlobalStrings = {
 	
 	
 	forEachStringPair: function(func) {
+		func(this.ALL_BUILDINGS, this.ALL_BUILDINGS_DISPLAY);
 		func(this.FLOOR, this.FLOOR_DISPLAY);
 		func(this.BUILDING, this.BUILDING_DISPLAY);
 		func(this.ROOM, this.ROOM_DISPLAY);

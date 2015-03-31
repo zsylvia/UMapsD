@@ -30,11 +30,6 @@ var MANUALLY_CONNECTING_MARKER_FROM = "Click on a marker to start a connection f
 var MANUALLY_CONNECTING_MARKER_TO = "Click on another marker to make a connection. Or select \"Cancel Manual Connect\" to exit manual connecting mode";
 var REMOVE_MODE_TIP_TEXT = "You are in \"remove mode\". Click any marker or path to remove it.";
 
-var paper;
-var totalCenterX;
-var totalCenterY;
-var roomNameObjects = [];
-
 var currrentlyPlotting = -1;
 var plottingRoom = 0;
 var plottingDoor = 1;
@@ -44,8 +39,6 @@ var plottingStair = 4;
 var plottingElevator = 5;
 var plottingBathroomMens = 6;
 var plottingBathroomWomens = 7;
-
-var shortToLongNameMap = new buckets.Dictionary();
 
 var markerTypeToColorMap = new buckets.Dictionary();
 markerTypeToColorMap.set(GlobalStrings.ROOM, GlobalStrings.COLOR.RED);
@@ -57,7 +50,7 @@ markerTypeToColorMap.set(GlobalStrings.ELEVATOR, GlobalStrings.COLOR.YELLOW);
 markerTypeToColorMap.set(GlobalStrings.BATHROOM_MENS, GlobalStrings.COLOR.CYAN);
 markerTypeToColorMap.set(GlobalStrings.BATHROOM_WOMENS, GlobalStrings.COLOR.PINK);
 
-var markerSize = 7;
+var markerSize = 5;
 var pathStrokeWidth = 4;
 
 var roomMap = new buckets.Dictionary();
@@ -108,6 +101,8 @@ typeToConnectionMap.set(GlobalStrings.ELEVATOR, elevatorConnectionMap);
 typeToConnectionMap.set(GlobalStrings.BATHROOM_MENS, bathroomMensConnectionMap);
 typeToConnectionMap.set(GlobalStrings.BATHROOM_WOMENS, bathroomWomensConnectionMap);
 
+var loadedBuildingsAndFloors = new buckets.Dictionary();
+
 // These counts are just used when naming, the number does not matter it only removes duplicates
 var doorIdCount = 0;
 var hallwayIdCount = 0;
@@ -116,11 +111,6 @@ var stairIdCount = 0;
 var elevatorIdCount = 0;
 var bathroomMensIdCount = 0;
 var bathroomWomensIdCount = 0;
-
-//TODO: Implement building and floor selector
-var buildingToFloorMap = new buckets.Dictionary();
-var currentBuilding = "dion";
-var currentFloor = "1";
 
 var manuallyConnectingMode = false;
 var manuallyConnectingMarker = false;
@@ -140,26 +130,15 @@ var showingPath = false;
 var testingForBadPaths = false;
 
 var draggingMarkerIgnoreClick = false;
-var draggingEverythingIgnoreClick = false;
 var mouseOnMarker = false;
 
-var paperResizeRatio = 1;
-var paperX = 0;
-var paperY = 0;
-var paperWidth;
-var paperHeight;
-var allElementsSet;
-
 var graph;
-
-var paperShiftX = 0;
-var paperShiftY = 0;
 
 var markerFormShowing = false;
 var selectedMarkerType = GlobalStrings.ROOM;
 var changeBuildingFloorShowing = false;
 
-var LOG = new Logger(LoggingLevel.ALL);
+var LOG = new Logger(LoggingLevel.OFF);
 
 function Connection(marker, distance) {
 	this.marker = marker;
@@ -395,71 +374,7 @@ function Command() {
 }
 
 $(document).ready(function() {
-	var start = new Date().getTime();
-
-	$("#raphael").css("height", $(window).height() - $("#body").height());
-
-	Raphael("raphael", $("#raphael").width(), $("#raphael").height(),
-		function() {
-			paper = this;
-
-			paper.setStart();
-			allElementsSet = paper.set();
-
-			var shapesCount = 0;
-
-			for (var i = 0; i < dictionary.buildings.length; i++) {
-				shortToLongNameMap.set(dictionary.buildings[i].short_id, dictionary.buildings[i].full_id);
-				var floorToShapeListAndNameMap = buildingToFloorMap.get(dictionary.buildings[i].short_id);
-				if (floorToShapeListAndNameMap == null) {
-					floorToShapeListAndNameMap = new buckets.Dictionary();
-				}
-				for (var j = 0; j < dictionary.buildings[i].floors.length; j++) {
-					var shapeListAndNameMap = floorToShapeListAndNameMap.get(dictionary.buildings[i].floors[j].id);
-					if (shapeListAndNameMap == null) {
-						shapeListAndNameMap = new buckets.Dictionary();
-					}
-					var shapeList = shapeListAndNameMap.get("shapes");
-					if (shapeList == null) {
-						shapeList = new buckets.LinkedList(function(shape) {
-							return shape.data(GlobalStrings.ID);
-						});
-					}
-					for (var k = 0; k < dictionary.buildings[i].floors[j].shapes.length; k++) {
-						var shape = dictionary.buildings[i].floors[j].shapes[k];
-						var path = paper.path(shape.path).data(GlobalStrings.ID, shape.id);
-						if (idIsType(shape.id, GlobalStrings.ROOM) || idIsType(shape.id, GlobalStrings.BATHROOM_MENS) || idIsType(shape.id, GlobalStrings.BATHROOM_WOMENS)) {
-							// path.attr({fill: "#0a2871", "fill-opacity": .5});
-						} else if (shape.id == "outline") {
-							// path.attr({fill: "#fddcac", "fill-opacity": .5});
-						}
-						allElementsSet.push(path);
-						shapeList.add(path);
-					}
-					shapeListAndNameMap.set("shapes", shapeList);
-					floorToShapeListAndNameMap.set(dictionary.buildings[i].floors[j].id, shapeListAndNameMap);
-				}
-				buildingToFloorMap.set(dictionary.buildings[i].short_id, floorToShapeListAndNameMap);
-			}
-
-			paper.setFinish();
-
-			paperWidth = paper.width;
-			paperHeight = paper.height;
-
-			raphaelSetup();
-
-			paper.forEach(function(el) {
-				el.scale(paperResizeRatio, paperResizeRatio, (paper.width / 2), (paper.height / 2));
-			});
-
-
-
-			LOG.trace("Took " + (new Date().getTime() - start) + " ms to setup raphael");
-		});
-
-	//Initally have room button clicked and show tool tip
-	$("#room_button").attr("checked", true);
+	//Initally show room tool tip
 	roomSelected();
 
 	$("#plot_markers_popover").popover({
@@ -482,161 +397,7 @@ $(document).ready(function() {
 
 		reader.readAsText(file);
 	});
-
-
-	var mouseDown = false;
-	var currX;
-	var currY;
-	$("#raphael").mousedown(function(event) {
-		currX = event.offsetX;
-		currY = event.offsetY;
-		mouseDown = true;
-	});
-	$("#raphael").mousemove(function(event) {
-		if (mouseDown && !mouseOnMarker) {
-			paperX = paperX + (currX - event.offsetX);
-			paperY = paperY + (currY - event.offsetY);
-			paperShiftX = Math.floor(paperX);
-			paperShiftY = Math.floor(paperY);
-			currX = event.offsetX;
-			currY = event.offsetY;
-			paperWidth = paper.width;
-			paperHeight = paper.height;
-			paper.setViewBox(paperX, paperY, paperWidth, paperHeight, false);
-
-			draggingEverythingIgnoreClick = true;
-		}
-	});
-	$("#raphael").mouseup(function(event) {
-		if (mouseDown) {
-			mouseDown = false;
-		}
-	});
-
-	//Firefox
-	$('#raphael').bind('DOMMouseScroll', function(e) {
-		var resizeRatio;
-		if (e.originalEvent.detail < 0) {
-			//scroll down / zoom out 10%
-			resizeRatio = .90;
-			paperResizeRatio = paperResizeRatio - .1;
-		} else {
-			//scroll up / zoom in 10%
-			resizeRatio = 1.1;
-			paperResizeRatio = paperResizeRatio + .1;
-		}
-
-		paper.forEach(function(el) {
-			el.scale(resizeRatio, resizeRatio, (paper.width / 2), (paper.height / 2));
-		});
-
-		paperWidth = paperWidth * resizeRatio;
-		paperHeight = paperHeight * resizeRatio;
-
-		// paper.setViewBox(paperShiftX, paperShiftY, paperWidth, paperHeight, true);
-
-		//prevent page fom scrolling
-		return false;
-	});
-
-	//IE, Opera, Safari
-	$('#raphael').bind('mousewheel', function(e) {
-		var resizeRatio;
-		if (e.originalEvent.wheelDelta < 0) {
-			//scroll down / zoom out 10%
-			resizeRatio = .90;
-			paperResizeRatio = paperResizeRatio - .1;
-		} else {
-			//scroll up / zoom in 10%
-			resizeRatio = 1.1;
-			paperResizeRatio = paperResizeRatio + .1;
-		}
-
-		paper.forEach(function(el) {
-			el.scale(resizeRatio, resizeRatio, (paper.width / 2), (paper.height / 2));
-		});
-
-		paperWidth = paperWidth * resizeRatio;
-		paperHeight = paperHeight * resizeRatio;
-
-		// paper.setViewBox(paperShiftX, paperShiftY, paperWidth, paperHeight, true);
-
-		//prevent page fom scrolling
-		return false;
-	});
 });
-
-function raphaelSetup() {
-	// var resizeRatio = 1.75;
-	var resizeRatio = .5;
-	var leftmostTopLeftX = 99999;
-	var leftmostTopLeftY = 99999;
-	var leftmostEl;
-	var rightmostBottomRightX = 0;
-	var rightmostBottomRightY = 0;
-	var rightmostEl;
-
-	buildingToFloorMap.forEach(function(building, floorToShapeListAndNameMap) {
-		floorToShapeListAndNameMap.forEach(function(floor, shapeListAndNameMap) {
-			var nameList = shapeListAndNameMap.get("names");
-			if (nameList == null) {
-				nameList = new buckets.LinkedList();
-			}
-			shapeListAndNameMap.get("shapes").forEach(function(shape) {
-				var id = shape.data(GlobalStrings.ID);
-				var bbox = shape.getBBox();
-				var centerX = bbox.x + (bbox.width / 2);
-				var centerY = bbox.y + (bbox.height / 2);
-
-				nameList.add(paper.text(centerX, centerY, id).attr("font-size", 4));
-
-				if (id == "outline" && building == "dion" && floor == "1") {
-					totalCenterX = centerX;
-					totalCenterY = centerY;
-				}
-
-				if (bbox.x < leftmostTopLeftX && bbox.y < leftmostTopLeftY) {
-					leftmostTopLeftX = bbox.x;
-					leftmostTopLeftY = bbox.y;
-					leftmostEl = shape;
-				}
-
-				if (bbox.x2 > rightmostBottomRightX && bbox.y2 > rightmostBottomRightY) {
-					rightmostBottomRightX = bbox.x2;
-					rightmostBottomRightY = bbox.y2;
-					rightmostEl = shape;
-				}
-			});
-			shapeListAndNameMap.set("names", nameList);
-		});
-	});
-
-	var resizeRatioX = Math.abs((paper.width - rightmostBottomRightX) / rightmostBottomRightX);
-	var resizeRatioY = Math.abs((paper.height - rightmostBottomRightY) / rightmostBottomRightY);
-
-	// paper.forEach(function(el) {
-	// 	var bbox = el.getBBox();
-	// 	var centerX = bbox.x + (bbox.width / 2);
-	// 	var centerY = bbox.y + (bbox.height / 2);
-	//
-	// 	// /** THIS IS HOW TO RESIZE EVERYTHING
-	// 	var x = totalCenterX - ((centerX + totalCenterX) * resizeRatio);
-	// 	var y = totalCenterY - ((centerY + totalCenterY) * resizeRatio);
-	// 	var moveX = (leftmostEl.getBBox(false).cx-leftmostEl.getBBox(true).cx);
-	// 	var moveY = (leftmostEl.getBBox(false).cy-leftmostEl.getBBox(true).cy);
-	//
-	// 	el.scale(resizeRatio, resizeRatio, 0, 0);
-	// 	// el.translate(moveX, moveY);
-	// 	// el.translate(-1800, -600);
-	// 	// el.translate(-1200, -100);
-	// 	// el.translate(165, 50);
-	// });
-
-	// var json = "{\"paths\":[{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2660_\",\"x\":2277.0362416124826,\"y\":507.3970000000001},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_16\",\"x\":2334.0362416124826,\"y\":456.3970000000001},\"d\":76},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2661_\",\"x\":2373.397,\"y\":466.39700000000016},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_9\",\"x\":2373.397,\"y\":507.39700000000016},\"d\":38},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2681_\",\"x\":2471.0362416124826,\"y\":510.3970000000001},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_17\",\"x\":2415.0362416124826,\"y\":456.3970000000001},\"d\":77},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2662_\",\"x\":2569.0362416124826,\"y\":475.3970000000001},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_10\",\"x\":2569.0362416124826,\"y\":504.3970000000001},\"d\":29},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2676_\",\"x\":2650.0362416124826,\"y\":507.3970000000001},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_21\",\"x\":2611.0362416124826,\"y\":459.3970000000001},\"d\":61},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2675_\",\"x\":2712.0362416124826,\"y\":475.3970000000001},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_48\",\"x\":2723.0362416124826,\"y\":459.3970000000001},\"d\":19},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_3069_\",\"x\":2748.0362416124826,\"y\":473.3970000000001},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_47\",\"x\":2768.0362416124826,\"y\":453.3970000000001},\"d\":28},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_3070_\",\"x\":2780.0362416124826,\"y\":473.3970000000001},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_46\",\"x\":2794.0362416124826,\"y\":456.3970000000001},\"d\":22},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2673_\",\"x\":2824.0362416124826,\"y\":704.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_31\",\"x\":2757.0362416124826,\"y\":658.3970000000002},\"d\":81},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2670_\",\"x\":2729.397,\"y\":742.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_28\",\"x\":2730.397,\"y\":707.3970000000002},\"d\":38},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2669_\",\"x\":2629.0362416124826,\"y\":706.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_23\",\"x\":2564.0362416124826,\"y\":655.3970000000002},\"d\":82},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2666_\",\"x\":2534.0362416124826,\"y\":736.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_22\",\"x\":2535.0362416124826,\"y\":703.3970000000002},\"d\":33},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2665_\",\"x\":2439.0362416124826,\"y\":712.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_13\",\"x\":2509.0362416124826,\"y\":657.3970000000002},\"d\":89},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2710_\",\"x\":2275.0362416124826,\"y\":669.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_6\",\"x\":2255.0362416124826,\"y\":618.3970000000002},\"d\":52},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2709_\",\"x\":2220.0362416124826,\"y\":670.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_5\",\"x\":2231.0362416124826,\"y\":618.3970000000002},\"d\":53},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2689_\",\"x\":3126.0362416124826,\"y\":408.3970000000001},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_42\",\"x\":3117.0362416124826,\"y\":425.3970000000001},\"d\":19},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2688_\",\"x\":3046.0362416124826,\"y\":474.3970000000001},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_42\"},\"d\":86},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2686_\",\"x\":3075.0362416124826,\"y\":695.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_41\",\"x\":3142.0362416124826,\"y\":756.3970000000002},\"d\":90},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2690_\",\"x\":3154.0362416124826,\"y\":765.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_41\"},\"d\":15},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2691_\",\"x\":2423.0362416124826,\"y\":622.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_15\",\"x\":2403.0362416124826,\"y\":621.3970000000002},\"d\":20},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2692_\",\"x\":2460.0362416124826,\"y\":622.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_14\",\"x\":2475.0362416124826,\"y\":620.3970000000002},\"d\":14},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2678_\",\"x\":2646.0362416124826,\"y\":585.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_24\",\"x\":2630.0362416124826,\"y\":591.3970000000002},\"d\":17},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2677_\",\"x\":2679.0362416124826,\"y\":583.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_25\",\"x\":2702.0362416124826,\"y\":584.3970000000002},\"d\":23},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_1\",\"x\":2418.397,\"y\":598.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_4\",\"x\":2368.397,\"y\":595.3970000000002},\"d\":49},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_2\",\"x\":2004.0362416124824,\"y\":601.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_1\",\"x\":2041.0362416124824,\"y\":601.3970000000002},\"d\":37},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_3\",\"x\":2047.0362416124824,\"y\":637.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_1\"},\"d\":36},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_4\",\"x\":2134.0362416124826,\"y\":575.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_2\",\"x\":2126.0362416124826,\"y\":601.3970000000002},\"d\":27},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_5\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_3\",\"x\":2246.397,\"y\":597.3970000000002},\"d\":26},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_6\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_3\"},\"d\":29},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_7\",\"x\":2345.397,\"y\":555.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_4\"},\"d\":38},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_8\",\"x\":2403.397,\"y\":556.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_4\"},\"d\":47},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_11\",\"x\":2543.0362416124826,\"y\":554.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_6\",\"x\":2551.0362416124826,\"y\":607.3970000000002},\"d\":53},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_12\",\"x\":2595.0362416124826,\"y\":553.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_6\"},\"d\":69},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_13\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_6\"},\"d\":65},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_14\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_6\"},\"d\":77},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_15\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_4\"},\"d\":47},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_18\",\"x\":2343.0362416124826,\"y\":638.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_5\",\"x\":2342.0362416124826,\"y\":655.3970000000002},\"d\":17},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_19\",\"x\":2340.0362416124826,\"y\":673.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_5\"},\"d\":18},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_20\",\"x\":2527.0362416124826,\"y\":457.3970000000001},\"m2\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2662_\"},\"d\":45},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_23\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_6\"},\"d\":49},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_25\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_7\",\"x\":2733.0362416124826,\"y\":614.3970000000002},\"d\":43},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_26\",\"x\":2685.0362416124826,\"y\":609.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_7\"},\"d\":48},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_27\",\"x\":2702.0362416124826,\"y\":656.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_7\"},\"d\":52},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_29\",\"x\":2741.0362416124826,\"y\":577.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_7\"},\"d\":37},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_30\",\"x\":2785.0362416124826,\"y\":576.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_7\"},\"d\":64},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_31\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_7\"},\"d\":50},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_32\",\"x\":2894.0362416124826,\"y\":605.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_10\",\"x\":2934.0362416124826,\"y\":608.3970000000002},\"d\":40},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_33\",\"x\":2918.0362416124826,\"y\":665.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_10\"},\"d\":59},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_34\",\"x\":2960.0362416124826,\"y\":658.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_10\"},\"d\":56},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_36\",\"x\":2937.0362416124826,\"y\":549.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_10\"},\"d\":59},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_38\",\"x\":3161.0362416124826,\"y\":563.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_12\",\"x\":3186.0362416124826,\"y\":578.3970000000002},\"d\":29},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_39\",\"x\":3190.0362416124826,\"y\":551.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_12\"},\"d\":27},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_40\",\"x\":3189.0362416124826,\"y\":605.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_12\"},\"d\":27},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_43\",\"x\":2915.0362416124826,\"y\":433.3970000000001},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_9\",\"x\":2854.0362416124826,\"y\":451.3970000000001},\"d\":63},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_45\",\"x\":2803.0362416124826,\"y\":435.3970000000001},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_9\"},\"d\":53},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_46\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_9\"},\"d\":60},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_49\",\"x\":2699.0362416124826,\"y\":454.3970000000001},\"m2\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2675_\"},\"d\":24},{\"m1\":{\"id\":\"bldg_dion_flr_1_hw_8\",\"x\":2850.0362416124826,\"y\":600.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_32\"},\"d\":44},{\"m1\":{\"id\":\"bldg_dion_flr_1_el_1\",\"x\":2972.0362416124826,\"y\":559.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_10\"},\"d\":62},{\"m1\":{\"id\":\"bldg_dion_flr_1_bathroom_mens_1\",\"x\":2787.0362416124826,\"y\":536.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_30\"},\"d\":40},{\"m1\":{\"id\":\"bldg_dion_flr_1_bathroom_womens_1\",\"x\":2737.0362416124826,\"y\":537.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_29\"},\"d\":40},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_44\",\"x\":2784.0362416124826,\"y\":416.3970000000001},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_13\",\"x\":2793.0362416124826,\"y\":426.3970000000001},\"d\":13},{\"m1\":{\"id\":\"bldg_dion_flr_1_hw_13\"},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_45\"},\"d\":13},{\"m1\":{\"id\":\"bldg_dion_flr_1_hw_1\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_2\"},\"d\":85},{\"m1\":{\"id\":\"bldg_dion_flr_1_hw_2\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_3\"},\"d\":116},{\"m1\":{\"id\":\"bldg_dion_flr_1_hw_3\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_4\"},\"d\":127},{\"m1\":{\"id\":\"bldg_dion_flr_1_hw_4\"},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_18\"},\"d\":56},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2660_\"},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_7\"},\"d\":87},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_16\"},\"m2\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2661_\"},\"d\":40},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_9\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_4\"},\"d\":84},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_8\"},\"m2\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2681_\"},\"d\":82},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_17\"},\"m2\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2661_\"},\"d\":41},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2681_\"},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_20\"},\"d\":77},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2662_\"},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_21\"},\"d\":44},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_10\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_6\"},\"d\":104},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_11\"},\"m2\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2681_\"},\"d\":84},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_12\"},\"m2\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2676_\"},\"d\":71},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_24\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_6\"},\"d\":80},{\"m1\":{\"id\":\"bldg_dion_flr_1_hw_6\"},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_26\"},\"d\":134},{\"m1\":{\"id\":\"bldg_dion_flr_1_hw_6\"},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_1\"},\"d\":133},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_22\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_6\"},\"d\":97},{\"m1\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2676_\"},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_49\"},\"d\":72},{\"m1\":{\"id\":\"bldg_dion_flr_1_hw_7\"},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_28\"},\"d\":89},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_27\"},\"m2\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2669_\"},\"d\":88},{\"m1\":{\"id\":\"bldg_dion_flr_1_hw_7\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_8\"},\"d\":117},{\"m1\":{\"id\":\"bldg_dion_flr_1_hw_9\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_8\"},\"d\":149},{\"m1\":{\"id\":\"bldg_dion_flr_1_hw_8\"},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_37\",\"x\":2921.0362416124826,\"y\":532.3970000000002},\"d\":98},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_36\"},\"m2\":{\"id\":\"bldg_dion_flr_1_st_1\",\"x\":2933.397,\"y\":495.39700000000016},\"d\":51},{\"m1\":{\"id\":\"bldg_dion_flr_1_st_1\"},\"m2\":{\"id\":\"bldg_dion_flr_1_dr_37\"},\"d\":36},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_43\"},\"m2\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2688_\"},\"d\":137},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_35\",\"x\":3017.0362416124826,\"y\":600.3970000000002},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_10\"},\"d\":83},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_34\"},\"m2\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2686_\"},\"d\":120},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_35\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_11\",\"x\":3105.0362416124826,\"y\":583.3970000000002},\"d\":89},{\"m1\":{\"id\":\"bldg_dion_flr_1_hw_11\"},\"m2\":{\"id\":\"bldg_dion_flr_1_hw_12\"},\"d\":81},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_40\"},\"m2\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2686_\"},\"d\":145},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_38\"},\"m2\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_2688_\"},\"d\":145},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_48\"},\"m2\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_3069_\"},\"d\":28},{\"m1\":{\"id\":\"bldg_dion_flr_1_dr_47\"},\"m2\":{\"id\":\"bldg_dion_flr_1_rm_LWPOLYLINE_3070_\"},\"d\":23}],\"markers\":[]}";
-	// loadGraphData(json);
-
-	showShapesForCurrentBuildingAndFloor();
-}
 
 function setMarkerDragEventHandlers(marker) {
 	marker.drag(function(dx, dy, x, y, event) {
@@ -660,146 +421,18 @@ function setMarkerDragEventHandlers(marker) {
 }
 
 function loadGraphData(json) {
-	var markerMap = createAllMarkersFromJson(json, paper);
-
-	markerMap.forEach(function(markerId, marker) {
-		setMarkerDragEventHandlers(marker);
-
-		getMarkerMapForType(marker.data(GlobalStrings.TYPE)).set(marker.data(GlobalStrings.ID), marker);
-
-		typeToConnectionMap.get(marker.data(GlobalStrings.TYPE)).set(marker, newConnectionSet());
-
-		if (marker.data(GlobalStrings.TYPE) == GlobalStrings.DOOR) {
-			doorIdCount++;
-		} else if (marker.data(GlobalStrings.TYPE) == GlobalStrings.HALLWAY) {
-			hallwayIdCount++;
-		} else if (marker.data(GlobalStrings.TYPE) == GlobalStrings.PATHWAY) {
-			pathwayIdCount++;
-		} else if (marker.data(GlobalStrings.TYPE) == GlobalStrings.STAIR) {
-			stairIdCount++;
-		} else if (marker.data(GlobalStrings.TYPE) == GlobalStrings.ELEVATOR) {
-			elevatorIdCount++;
-		} else if (marker.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_MENS) {
-			bathroomMensIdCount++;
-		} else if (marker.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_WOMENS) {
-			bathroomWomensIdCount++;
-		}
+	createAllMarkersFromJson(json, paper).forEach(function(markerId, marker){
+		typeToMarkerMap.get(marker.data(GlobalStrings.TYPE)).set(markerId, marker);
 	});
 
 	createAllPathsFromJson(json, paper).forEach(function(pathString, path) {
 		pathMap.set(pathString, path);
 	});
-
-	pathMap.forEach(function(pathString, path) {
-		var marker1 = getMarkerFromId(path.marker1Data.id);
-		if (marker1 == null) {
-			marker1 = addMarker(path.marker1Data.cx, path.marker1Data.cy, markerTypeToColorMap.get(path.marker1Data.type));
-			marker1.data(GlobalStrings.ID, path.marker1Data.id);
-			if (path.marker1Data.type == GlobalStrings.ROOM || path.marker1Data.type == GlobalStrings.BATHROOM_MENS || path.marker1Data.type == GlobalStrings.BATHROOM_WOMENS) {
-				buildingToFloorMap.get(path.marker1Data.building).get(path.marker1Data.floor).get("shapes").forEach(function(element) {
-					if (element.data(GlobalStrings.ID) != "outline" && element.isPointInside(marker1.attr("cx"), marker1.attr("cy"))) {
-						marker1.data(GlobalStrings.ID, element.data(GlobalStrings.ID));
-						path.marker1Data.id = marker1.data(GlobalStrings.ID);
-						return false;
-					}
-				});
-			}
-			marker1.data(GlobalStrings.TYPE, path.marker1Data.type);
-			if (path.marker1Data.type != GlobalStrings.PATHWAY) {
-				marker1.data(GlobalStrings.BUILDING, path.marker1Data.building);
-				marker1.data(GlobalStrings.FLOOR, path.marker1Data.floor);
-			}
-			getMarkerMapForType(marker1.data(GlobalStrings.TYPE)).set(marker1.data(GlobalStrings.ID), marker1);
-
-			typeToConnectionMap.get(marker1.data(GlobalStrings.TYPE)).set(marker1, newConnectionSet());
-
-			if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.DOOR) {
-				doorIdCount++;
-			} else if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.HALLWAY) {
-				hallwayIdCount++;
-			} else if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.PATHWAY) {
-				pathwayIdCount++;
-			} else if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.STAIR) {
-				stairIdCount++;
-			} else if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.ELEVATOR) {
-				elevatorIdCount++;
-			} else if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_MENS) {
-				bathroomMensIdCount++;
-			} else if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_WOMENS) {
-				bathroomWomensIdCount++;
-			}
-		}
-		var marker2 = getMarkerFromId(path.marker2Data.id);
-		if (marker2 == null) {
-			marker2 = addMarker(path.marker2Data.cx, path.marker2Data.cy, markerTypeToColorMap.get(path.marker2Data.type));
-			marker2.data(GlobalStrings.ID, path.marker2Data.id);
-			marker2.data(GlobalStrings.ID, path.marker2Data.id);
-			if (path.marker2Data.type == GlobalStrings.ROOM || path.marker2Data.type == GlobalStrings.BATHROOM_MENS || path.marker2Data.type == GlobalStrings.BATHROOM_WOMENS) {
-				buildingToFloorMap.get(path.marker2Data.building).get(path.marker2Data.floor).get("shapes").forEach(function(element) {
-					if (element.data(GlobalStrings.ID) != "outline" && element.isPointInside(marker2.attr("cx"), marker2.attr("cy"))) {
-						marker2.data(GlobalStrings.ID, element.data(GlobalStrings.ID));
-						path.marker2Data.id = marker2.data(GlobalStrings.ID);
-						return false;
-					}
-				});
-			}
-			marker2.data(GlobalStrings.TYPE, path.marker2Data.type);
-			if (path.marker2Data.type != GlobalStrings.PATHWAY) {
-				marker2.data(GlobalStrings.BUILDING, path.marker2Data.building);
-				marker2.data(GlobalStrings.FLOOR, path.marker2Data.floor);
-			}
-			getMarkerMapForType(marker2.data(GlobalStrings.TYPE)).set(marker2.data(GlobalStrings.ID), marker2);
-
-			typeToConnectionMap.get(marker2.data(GlobalStrings.TYPE)).set(marker2, newConnectionSet());
-
-			if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.DOOR) {
-				doorIdCount++;
-			} else if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.HALLWAY) {
-				hallwayIdCount++;
-			} else if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.PATHWAY) {
-				pathwayIdCount++;
-			} else if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.STAIR) {
-				stairIdCount++;
-			} else if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.ELEVATOR) {
-				elevatorIdCount++;
-			} else if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_MENS) {
-				bathroomMensIdCount++;
-			} else if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_WOMENS) {
-				bathroomWomensIdCount++;
-			}
-		}
-		var marker1ConnectionMap = getConnectionMapForType(marker1.data(GlobalStrings.TYPE));
-		var marker2ConnectionMap = getConnectionMapForType(marker2.data(GlobalStrings.TYPE));
-
-		var connectionSet = marker1ConnectionMap.get(marker1);
-		if (connectionSet == null) {
-			connectionSet = newConnectionSet();
-		}
-		var distance = getDistance(marker1, marker2);
-		var success = connectionSet.add(new Connection(marker2, distance));
-
-		var addedPath = null;
-
-		if (success) {
-			marker1ConnectionMap.set(marker1, connectionSet);
-		}
-
-		var connectionSet = marker2ConnectionMap.get(marker2);
-		if (connectionSet == null) {
-			connectionSet = newConnectionSet();
-		}
-
-		var success = connectionSet.add(new Connection(marker1, distance));
-		if (success) {
-			marker2ConnectionMap.set(marker2, connectionSet);
-		}
-
-		marker1.toFront();
-		marker2.toFront();
-	});
-
-	generateGraph();
+	
 	showShapesForCurrentBuildingAndFloor();
+	showMarkersForCurrentBuildingAndFloor();
+
+	setFloorSelectorForBuilding(currentBuilding, currentFloor);
 }
 
 function markerDragEventStart(marker, x, y, event) {
@@ -856,8 +489,8 @@ $(document).bind("click", function(ev) {
 });
 
 function handleClick(ev, secondTry) {
-	var clickX = ev.offsetX;
-	var clickY = ev.offsetY;
+	var clickX = ev.offsetX*paperResizeRatio;
+	var clickY = ev.offsetY*paperResizeRatio;
 
 	if (ev.target.getAttribute("customNodeName") == "tspan") {
 		clickX = ev.pageX;
@@ -923,17 +556,16 @@ function handleClick(ev, secondTry) {
 						}
 					});
 				}
-
+				
 				var marker = plotMarker(clickX - paperShiftX, clickY - paperShiftY, clickedElement);
 				if (marker != null) {
 					marker.attr("cx", clickX);
 					marker.attr("cy", clickY);
-					// marker.scale(paperResizeRatio, paperResizeRatio, clickX, clickY);
+					marker.scale(paperResizeRatio, paperResizeRatio, clickX, clickY);
 				}
 			}
 		}
 	} else if (ev.target.getAttribute("customNodeName") == "circle") {
-
 		var marker = null;
 		allMarkers.forEach(function(markerMap) {
 			markerMap.forEach(function(markerId, markerObj) {
@@ -1179,7 +811,12 @@ function plotMarker(x, y, element) {
 }
 
 function plotRoom(x, y, building, floor, elementId) {
-	var roomId = elementId;
+	var roomId;
+	if (idIsValid(elementId)) {
+		roomId = elementId;
+	} else {
+		roomId = formatRoomId(building, floor, elementId);
+	}
 
 	var marker = null;
 
@@ -1279,8 +916,12 @@ function plotElevator(x, y, building, floor) {
 }
 
 function plotBathroomMens(x, y, building, floor, elementId) {
-	// var id = formatBathroomMensId(building, floor);
-	var id = elementId;
+	var id;
+	if (idIsValid(elementId)) {
+		id = elementId;
+	} else {
+		id = formatBathroomMensId(building, floor)
+	}
 	LOG.info("Plotting new men's bathroom " + id + " at (" + x + "," + y + ")");
 	marker = addMarker(x, y, markerTypeToColorMap.get(GlobalStrings.BATHROOM_MENS));
 	marker.data(GlobalStrings.ID, id);
@@ -1293,8 +934,12 @@ function plotBathroomMens(x, y, building, floor, elementId) {
 }
 
 function plotBathroomWomens(x, y, building, floor, elementId) {
-	// var id = formatBathroomWomensId(building, floor);
-	var id = elementId;
+	var id;
+	if (idIsValid(elementId)) {
+		id = elementId;
+	} else {
+		id = formatBathroomWomensId(building, floor)
+	}
 	LOG.info("Plotting new women's bathroom " + id + " at (" + x + "," + y + ")");
 	marker = addMarker(x, y, markerTypeToColorMap.get(GlobalStrings.BATHROOM_WOMENS));
 	marker.data(GlobalStrings.ID, id);
@@ -1307,7 +952,7 @@ function plotBathroomWomens(x, y, building, floor, elementId) {
 }
 
 function addMarker(x, y, color) {
-	var marker = paper.circle(x, y, markerSize).attr({
+	var marker = paper.circle(x, y, markerSize/paperResizeRatio).attr({
 		fill: color
 	});
 
@@ -1316,8 +961,6 @@ function addMarker(x, y, color) {
 	if (addToUndoStack) {
 		undoStack.push(new Command().addMarker(marker));
 	}
-
-	allElementsSet.push(marker);
 
 	return marker;
 }
@@ -1831,7 +1474,7 @@ function formatBathroomMensId(building, floor) {
 	var id = null;
 	while (id == null) {
 		bathroomMensIdCount++;
-		var tmpId = GlobalStrings.BUILDING_ID + "_" + building + "_" + GlobalStrings.FLOOR_ID + "_" + floor + "_" + GlobalStrings.BATHROOM_MENS + "_" + bathroomMensIdCount;
+		var tmpId = GlobalStrings.BUILDING_ID + "_" + building + "_" + GlobalStrings.FLOOR_ID + "_" + floor + "_" + GlobalStrings.BATHROOM_MENS_ID + "_" + bathroomMensIdCount;
 		if (!bathroomMensMap.containsKey(tmpId)) {
 			id = tmpId;
 		}
@@ -1843,7 +1486,7 @@ function formatBathroomWomensId(building, floor) {
 	var id = null;
 	while (id == null) {
 		bathroomWomensIdCount++;
-		var tmpId = GlobalStrings.BUILDING_ID + "_" + building + "_" + GlobalStrings.FLOOR_ID + "_" + floor + "_" + GlobalStrings.BATHROOM_WOMENS + "_" + bathroomWomensIdCount;
+		var tmpId = GlobalStrings.BUILDING_ID + "_" + building + "_" + GlobalStrings.FLOOR_ID + "_" + floor + "_" + GlobalStrings.BATHROOM_WOMENS_ID + "_" + bathroomWomensIdCount;
 		if (!bathroomWomensMap.containsKey(tmpId)) {
 			id = tmpId;
 		}
@@ -2174,6 +1817,16 @@ function enableAllButtons() {
 function generateGraph() {
 	var start = new Date().getTime();
 	graph = new Graph();
+	
+	// Make sure all markers are loaded before creating the graph
+	buildingToFloorIdsMap.forEach(function(building, floorList){
+		floorList.forEach(function(floor){
+			loadShapesForBuildingAndFloor(building, floor);
+			loadMarkersForBuildingAndFloor(building, floor);
+		});
+	});
+	showShapesForCurrentBuildingAndFloor();
+	showMarkersForCurrentBuildingAndFloor();
 
 	allMarkers.forEach(function(markerMap) {
 		markerMap.forEach(function(markerId, marker) {
@@ -2410,42 +2063,6 @@ function testForBadPaths() {
 							LOG.error("There is no path from " + markerFromID + " to " + markerToID);
 							badPaths++;
 						}
-						// path[0] and path[path.length-1]
-						// var roomCount = 0;
-						// for (var i = 1; i < path.length - 1; i++) {
-						// 	var marker = getMarkerFromId(path[i]);
-						// 	if (marker.data(GlobalStrings.TYPE) == GlobalStrings.ROOM) {
-						// 		roomCount++;
-						// 	}
-						// }
-						// if (roomCount > 1) {
-						// 	LOG.error("Path from " + markerFromID + " to " + markerToID + " goes through " + roomCount + " other rooms. " + path);
-						// 	badPaths++;
-						// 	var pathColor = '#' + Math.floor(Math.random() * 16777215).toString(16);
-						// 	for (var i = 0; i < path.length; i++) {
-						// 		var markerID = path[i];
-						// 		var marker = getMarkerFromId(markerID);
-						//
-						// 		var animation = Raphael.animation({
-						// 			fill: pathColor,
-						// 			stroke: pathColor
-						// 		}, 1000, "<>").repeat(Infinity);
-						//
-						// 		marker.animate(animation);
-						//
-						// 		if (i < path.length - 1) {
-						// 			var marker1ID = marker.data(GlobalStrings.ID);
-						// 			var marker2ID = path[i + 1];
-						//
-						// 			var pathObject = pathMap.get(marker1ID + "<->" + marker2ID);
-						// 			if(pathObject == null) {
-						// 				pathObject = pathMap.get(marker2ID + "<->" + marker1ID);
-						// 			}
-						//
-						// 			pathObject.element.animate(animation);
-						// 		}
-						// 	}
-						// }
 
 						testedIdSet.add(markerToID);
 						var markerToTestedIdSet = idToTestedIdSetMap.get(markerToID);
@@ -2569,9 +2186,9 @@ function changeBuildingFloor() {
 		"<div class='form-group'>" +
 		"<label for='building_selector'>Building</label>" +
 		"<select id='building_selector' name='building' class='form-control'>" +
-		"<option id='" + GlobalStrings.ALL_BUILDINGS + "' " + (currentBuilding == GlobalStrings.ALL_BUILDINGS ? "selected='true'" : "") + ">" + GlobalStrings.ALL_BUILDINGS + "</option>";
-	buildingToFloorMap.forEach(function(building, floorToShapeListMap) {
-		buildingFloorContent += "<option id='" + building + "' " + (currentBuilding == building ? "selected='true'" : "") + ">" + shortToLongNameMap.get(building) + "</option>";
+		"<option id='" + GlobalStrings.ALL_BUILDINGS + "' " + (currentBuilding == GlobalStrings.ALL_BUILDINGS ? "selected='true'" : "") + ">" + GlobalStrings.ALL_BUILDINGS_DISPLAY + "</option>";
+	buildingShortToLongNameMap.forEach(function(shortName, longName) {
+		buildingFloorContent += "<option id='" + shortName + "' " + (currentBuilding == shortName ? "selected='true'" : "") + ">" + longName + "</option>";
 	});
 
 	buildingFloorContent += "</select>" +
@@ -2583,8 +2200,8 @@ function changeBuildingFloor() {
 	if (currentBuilding == GlobalStrings.ALL_BUILDINGS) {
 		var lowFloor;
 		var topFloor;
-		buildingToFloorMap.forEach(function(building, floorToShapeListMap) {
-			floorToShapeListMap.forEach(function(floor, shapeList) {
+		buildingToFloorIdsMap.forEach(function(building, floorList) {
+			floorList.forEach(function(floor) {
 				if (lowFloor == null || floor < lowFloor) {
 					lowFloor = floor;
 				}
@@ -2593,6 +2210,7 @@ function changeBuildingFloor() {
 				}
 			});
 		});
+
 		if (lowFloor != null && topFloor != null) {
 			for (var i = lowFloor; i <= topFloor; i++) {
 				var floor = i;
@@ -2600,7 +2218,7 @@ function changeBuildingFloor() {
 			}
 		}
 	} else {
-		buildingToFloorMap.get(currentBuilding).forEach(function(floor, shapeList) {
+		buildingToFloorIdsMap.get(currentBuilding).forEach(function(floor) {
 			buildingFloorContent += "<option id='" + floor + "' " + (currentFloor == floor ? "selected='true'" : "") + ">" + floor + "</option>";
 		});
 	}
@@ -2633,7 +2251,10 @@ function hideChangeBuildingFloorPopover() {
 
 function changeBuildingFloorChanged() {
 	var selectedBuilding;
-	shortToLongNameMap.forEach(function(short, long) {
+	if ($("#building_selector").val() == GlobalStrings.ALL_BUILDINGS_DISPLAY) {
+		selectedBuilding = GlobalStrings.ALL_BUILDINGS;
+	}
+	buildingShortToLongNameMap.forEach(function(short, long) {
 		if (long == $("#building_selector").val()) {
 			selectedBuilding = short;
 			return false;
@@ -2644,19 +2265,16 @@ function changeBuildingFloorChanged() {
 		if (selectedBuilding != GlobalStrings.ALL_BUILDINGS) {
 			// Building changed. Try to stay on same floor but different building. Else try for B of building, then 1st floor etc.
 			var newFloor;
-			buildingToFloorMap.get(selectedBuilding).forEach(function(floor, shapeList) {
-				if (newFloor == null) {
-					newFloor = floor;
-				} else {
-					if (floor == selectedFloor) {
-						newFloor = selectedFloor;
-					} else {
-						if (floor == "B" || floor == "1") {
-							newFloor = floor;
-						}
-					}
-				}
-			});
+			var floorList = buildingToFloorIdsMap.get(selectedBuilding);
+			if (floorList.contains(selectedFloor)) {
+				newFloor = selectedFloor;
+			} else if (selectedFloor < floorList.first()) {
+				newFloor = floorList.first();
+			} else if (selectedFloor > floorList.last()) {
+				newFloor = floorList.last();
+			} else {
+				newFloor = floorList.first();
+			}
 
 			currentFloor = newFloor;
 		}
@@ -2668,56 +2286,9 @@ function changeBuildingFloorChanged() {
 	}
 
 	showShapesForCurrentBuildingAndFloor();
-}
-
-function showShapesForBuildingAndFloor(building, floor) {
-	LOG.debug("Showing shapes for building " + building + " and floor " + floor);
-	paperX = 999999;
-	paperY = 999999;
-	var lowerRightX = -999999;
-	var lowerRightY = -999999;
-	var showAllBuildings = (building == GlobalStrings.ALL_BUILDINGS);
-	buildingToFloorMap.forEach(function(bldg, floorToShapeListMap) {
-		floorToShapeListMap.forEach(function(flr, shapeListAndNameMap) {
-			var shapeList = shapeListAndNameMap.get("shapes");
-			var nameList = shapeListAndNameMap.get("names");
-			shapeList.forEach(function(shape) {
-				if ((showAllBuildings || building == bldg) && floor == flr) {
-					shape.show();
-				} else {
-					shape.hide();
-				}
-
-				if (showAllBuildings || (building == bldg && floor == flr)) {
-					var bbox = shape.getBBox();
-					if (bbox.x < paperX) {
-						paperX = bbox.x;
-					}
-					if (bbox.y < paperY) {
-						paperY = bbox.y;
-					}
-					if (bbox.x2 > lowerRightX) {
-						lowerRightX = bbox.x2;
-					}
-					if (bbox.y2 > lowerRightY) {
-						lowerRightY = bbox.y2;
-					}
-				}
-
-			});
-			nameList.forEach(function(name) {
-				if ((showAllBuildings || building == bldg) && floor == flr) {
-					name.show();
-				} else {
-					name.hide();
-				}
-			});
-		});
-	});
-
-	paperShiftX = Math.floor(paperX);
-	paperShiftY = Math.floor(paperY);
-	paper.setViewBox(paperX, paperY, paper.width, paper.height, false);
+	showMarkersForCurrentBuildingAndFloor();
+	
+	var showAllBuildings = currentBuilding == GlobalStrings.ALL_BUILDINGS;
 
 	executeOnAllMarkers(function(marker) {
 		if (marker.data(GlobalStrings.TYPE) != GlobalStrings.PATHWAY) {
@@ -2747,55 +2318,338 @@ function showShapesForBuildingAndFloor(building, floor) {
 			path.element.hide();
 		}
 	});
+
+	setFloorSelectorForBuilding(currentBuilding, currentFloor);
 }
 
-function showShapesForCurrentBuildingAndFloor() {
-	LOG.debug("Showing shapes for current building and floor");
-	showShapesForBuildingAndFloor(currentBuilding, currentFloor);
-}
+function setFloorSelectorForBuilding(building, selectedFloor) {
+	var optionsHtml = "";
+	if (building == GlobalStrings.ALL_BUILDINGS) {
+		if (currentBuilding == GlobalStrings.ALL_BUILDINGS) {
+			var lowFloor;
+			var topFloor;
+			buildingToFloorIdsMap.forEach(function(building, floorList) {
+				floorList.forEach(function(floor) {
+					if (lowFloor == null || floor < lowFloor) {
+						lowFloor = floor;
+					}
+					if (topFloor == null || floor > topFloor) {
+						topFloor = floor;
+					}
+				});
+			});
 
-function idIsType(id, type) {
-	switch (type) {
-		case GlobalStrings.ROOM:
-			if (id.lastIndexOf(GlobalStrings.ROOM_ID + "_") > -1) {
-				return true;
+			if (lowFloor != null && topFloor != null) {
+				for (var i = lowFloor; i <= topFloor; i++) {
+					var floor = i;
+					optionsHtml += "<option id='" + floor + "' " + (currentFloor == floor ? "selected='true'" : "") + ">" + floor + "</option>";
+				}
 			}
-			break;
-		case GlobalStrings.DOOR:
-			if (id.lastIndexOf(GlobalStrings.DOOR_ID + "_") > -1) {
-				return true;
-			}
-			break;
-		case GlobalStrings.HALLWAY:
-			if (id.lastIndexOf(GlobalStrings.HALLWAY_ID) + "_" > -1) {
-				return true;
-			}
-			break;
-		case GlobalStrings.PATHWAY:
-			if (id.lastIndexOf(GlobalStrings.PATHWAY_ID + "_") > -1) {
-				return true;
-			}
-			break;
-		case GlobalStrings.STAIR:
-			if (id.lastIndexOf(GlobalStrings.STAIR_ID + "_") > -1) {
-				return true;
-			}
-			break;
-		case GlobalStrings.ELEVATOR:
-			if (id.lastIndexOf(GlobalStrings.ELEVATOR_ID + "_") > -1) {
-				return true;
-			}
-			break;
-		case GlobalStrings.BATHROOM_MENS:
-			if (id.lastIndexOf(GlobalStrings.BATHROOM_MENS_ID + "_") > -1) {
-				return true;
-			}
-			break;
-		case GlobalStrings.BATHROOM_WOMENS:
-			if (id.lastIndexOf(GlobalStrings.BATHROOM_WOMENS_ID + "_") > -1) {
-				return true;
-			}
-			break;
+		}
+	} else {
+		var floorList = buildingToFloorIdsMap.get(building);
+		floorList.forEach(function(floor) {
+			optionsHtml += "<option id='" + floor + "' " + (selectedFloor == floor ? "selected='true'" : "") + ">" + floor + "</option>"
+		});
 	}
-	return false;
+	$("#floor_selector").html(optionsHtml);
+}
+
+function showPathsForMarker(marker, building, floor) {
+	LOG.trace("Showing paths for marker " + marker.data(GlobalStrings.ID) + " building " + building + " floor " + floor);
+	typeToConnectionMap.get(marker.data(GlobalStrings.TYPE)).get(marker).forEach(function(connection){
+		if(connection.marker.data(GlobalStrings.TYPE) == GlobalStrings.PATHWAY || 
+		((building == GlobalStrings.ALL_BUILDINGS || connection.marker.data(GlobalStrings.BUILDING)) && connection.marker.data(GlobalStrings.FLOOR) == floor)) {
+			var path = pathMap.get(marker.data(GlobalStrings.ID) + "<->" + connection.marker.data(GlobalStrings.ID));
+			if(path == null) {
+				path = pathMap.get(connection.marker.data(GlobalStrings.ID) + "<->" + marker.data(GlobalStrings.ID));
+			}
+			if(path != null) {
+				path.element.show();
+			} else {
+				LOG.error("Could not find path between " + marker.data(GlobalStrings.ID) + " and " + connection.marker.data(GlobalStrings.ID));
+			}
+		}
+	});
+}
+
+function hidePathsForMarker(marker, building, floor) {
+	LOG.trace("Hiding paths for marker " + marker.data(GlobalStrings.ID) + " building " + building + " floor " + floor);
+	typeToConnectionMap.get(marker.data(GlobalStrings.TYPE)).get(marker).forEach(function(connection){
+		if(connection.marker.data(GlobalStrings.TYPE) == GlobalStrings.PATHWAY || 
+		((building == GlobalStrings.ALL_BUILDINGS || connection.marker.data(GlobalStrings.BUILDING)) && connection.marker.data(GlobalStrings.FLOOR) == floor)) {
+			var path = pathMap.get(marker.data(GlobalStrings.ID) + "<->" + connection.marker.data(GlobalStrings.ID));
+			if(path == null) {
+				path = pathMap.get(connection.marker.data(GlobalStrings.ID) + "<->" + marker.data(GlobalStrings.ID));
+			}
+			if(path != null) {
+				path.element.hide();
+			} else {
+				LOG.error("Could not find path between " + marker.data(GlobalStrings.ID) + " and " + connection.marker.data(GlobalStrings.ID));
+			}
+		}
+	});
+}
+
+// Must run showShapesForCurrentBuildingAndFloor() before this
+function showMarkersForCurrentBuildingAndFloor() {
+	LOG.debug("Showing markers for current building and floor");
+	showMarkersForBuildingAndFloor(currentBuilding, currentFloor);
+}
+
+// Must run showShapesForBuildingAndFloor(building, floor) before this
+function showMarkersForBuildingAndFloor(building, floor) {
+	loadMarkersForBuildingAndFloor(building, floor);
+	LOG.debug("Showing markers for building " + building + " floor " + floor);
+	LOG.debug("Only displaying pathways if floor is 1");
+	LOG.warn("Change this to show all pathways that are NOT connected to ANY door/parking lot at all OR if it is connected to door/parking lot on this floor");
+	executeOnAllMarkers(function(marker){
+		if(marker.data(GlobalStrings.TYPE) == GlobalStrings.PATHWAY && floor == "1") {
+			marker.show();
+			showPathsForMarker(marker, building, floor);
+		} else if((building == GlobalStrings.ALL_BUILDINGS || marker.data(GlobalStrings.BUILDING) == building) && marker.data(GlobalStrings.FLOOR) == floor) {
+			marker.show();
+			showPathsForMarker(marker, building, floor);
+		} else {
+			marker.hide();
+			hidePathsForMarker(marker, building, floor);
+		}
+	});
+	showPathsForBuildingAndFloor(building, floor);
+	hidePathsForBuildingAndFloor(building, floor);
+}
+
+// Shows paths that HAVE have both endpoints in the building and floor
+function showPathsForBuildingAndFloor(building, floor) {
+	pathMap.forEach(function(pathString, path){
+		if(building != GlobalStrings.ALL_BUILDINGS) {
+			if(path.marker1Data.type != GlobalStrings.PATHWAY && path.marker2Data.type != GlobalStrings.PATHWAY) {
+				if((path.marker1Data.building == building && path.marker1Data.floor == floor) && (path.marker2Data.building == building && path.marker2Data.floor == floor)) {
+					path.element.show();
+				}
+			}
+		}
+	});
+}
+
+// Hides paths that do NOT have both endpoints in the building and floor
+function hidePathsForBuildingAndFloor(building, floor) {
+	pathMap.forEach(function(pathString, path){
+		if(building != GlobalStrings.ALL_BUILDINGS) {
+			if(path.marker1Data.type != GlobalStrings.PATHWAY && path.marker2Data.type != GlobalStrings.PATHWAY) {
+				if((path.marker1Data.building != building || path.marker1Data.floor != floor) || (path.marker2Data.building != building || path.marker2Data.floor != floor)) {
+					path.element.hide();
+				}
+			}
+		}
+	});
+}
+
+// Must run loadShapesForBuildingAndFloor(building, floor) before this
+function loadMarkersForBuildingAndFloor(building, floor) {
+	if(!loadedBuildingsAndFloors.containsKey(building) || !loadedBuildingsAndFloors.get(building).contains(floor) || building == GlobalStrings.ALL_BUILDINGS) {
+		LOG.debug("Loading markers for building " + building + " floor " + floor);
+		allMarkers.forEach(function(markerMap){
+			markerMap.forEach(function(markerId, marker) {
+					if (marker.data(GlobalStrings.TYPE) == GlobalStrings.ROOM || marker.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_MENS || marker.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_WOMENS) {
+						buildingToFloorMap.get(marker.data(GlobalStrings.BUILDING)).get(marker.data(GlobalStrings.FLOOR)).get("shapes").forEach(function(element) {
+							var show = element.isVisible();
+							element.show();
+
+							if (!idIsValid(marker.data(GlobalStrings.ID)) && element.data(GlobalStrings.ID) != "outline" && element.isPointInside(marker.attr("cx"), marker.attr("cy")) 
+								&& idIsValid(element.data(GlobalStrings.ID))) {
+									LOG.debug("Resetting marker id from " + marker.data(GlobalStrings.ID) + " to " + element.data(GlobalStrings.ID));
+								marker.data(GlobalStrings.ID, element.data(GlobalStrings.ID));
+								return false;
+							}
+
+							if (!show) {
+								element.hide();
+							}
+						});
+					}
+
+					setMarkerDragEventHandlers(marker);
+				
+					if(!getMarkerMapForType(marker.data(GlobalStrings.TYPE)).containsKey(marker.data(GlobalStrings.ID))){
+						getMarkerMapForType(marker.data(GlobalStrings.TYPE)).set(marker.data(GlobalStrings.ID), marker);
+					}
+				
+					if(!typeToConnectionMap.get(marker.data(GlobalStrings.TYPE)).containsKey(marker)){
+						typeToConnectionMap.get(marker.data(GlobalStrings.TYPE)).set(marker, newConnectionSet());
+					}
+
+					if (marker.data(GlobalStrings.TYPE) == GlobalStrings.DOOR) {
+						doorIdCount++;
+					} else if (marker.data(GlobalStrings.TYPE) == GlobalStrings.HALLWAY) {
+						hallwayIdCount++;
+					} else if (marker.data(GlobalStrings.TYPE) == GlobalStrings.PATHWAY) {
+						pathwayIdCount++;
+					} else if (marker.data(GlobalStrings.TYPE) == GlobalStrings.STAIR) {
+						stairIdCount++;
+					} else if (marker.data(GlobalStrings.TYPE) == GlobalStrings.ELEVATOR) {
+						elevatorIdCount++;
+					} else if (marker.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_MENS) {
+						bathroomMensIdCount++;
+					} else if (marker.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_WOMENS) {
+						bathroomWomensIdCount++;
+					}
+			});
+		});
+	
+		pathMap.forEach(function(pathString, path) {
+			var marker1 = null;
+			var marker2 = null;
+			if(!getMarkerMapForType(path.marker1Data.type).containsKey(path.marker1Data.id)){
+				if(path.marker1Data.type != GlobalStrings.PATHWAY) {
+					if((building == GlobalStrings.ALL_BUILDINGS || path.marker1Data.building == building) && path.marker1Data.floor == floor) {
+						marker1 = getMarkerFromId(path.marker1Data.id);
+						if (marker1 == null) {
+							marker1 = addMarker(path.marker1Data.cx, path.marker1Data.cy, markerTypeToColorMap.get(path.marker1Data.type));
+							marker1.data(GlobalStrings.ID, path.marker1Data.id);
+							if (path.marker1Data.type == GlobalStrings.ROOM || path.marker1Data.type == GlobalStrings.BATHROOM_MENS || path.marker1Data.type == GlobalStrings.BATHROOM_WOMENS) {
+								buildingToFloorMap.get(path.marker1Data.building).get(path.marker1Data.floor).get("shapes").forEach(function(element) {
+									var show = element.isVisible();
+									element.show();
+
+									if (!idIsValid(path.marker1Data.id) && element.data(GlobalStrings.ID) != "outline" && element.isPointInside(marker1.attr("cx"), marker1.attr("cy")) 
+										&& idIsValid(element.data(GlobalStrings.ID))) {
+										LOG.debug("Resetting marker id from " + path.marker1Data.id + " to " + element.data(GlobalStrings.ID));
+										marker1.data(GlobalStrings.ID, element.data(GlobalStrings.ID));
+										path.marker1Data.id = marker1.data(GlobalStrings.ID);
+										return false;
+									}
+
+									if (!show) {
+										element.hide();
+									}
+								});
+							}
+							marker1.data(GlobalStrings.TYPE, path.marker1Data.type);
+							marker1.data(GlobalStrings.BUILDING, path.marker1Data.building);
+							marker1.data(GlobalStrings.FLOOR, path.marker1Data.floor);
+					
+							if(!getMarkerMapForType(marker1.data(GlobalStrings.TYPE)).containsKey(marker1.data(GlobalStrings.ID))) {
+								getMarkerMapForType(marker1.data(GlobalStrings.TYPE)).set(marker1.data(GlobalStrings.ID), marker1);
+							}
+							
+							if(!typeToConnectionMap.containsKey(marker1.data(GlobalStrings.TYPE))){
+								typeToConnectionMap.get(marker1.data(GlobalStrings.TYPE)).set(marker1, newConnectionSet());
+							}
+
+							if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.DOOR) {
+								doorIdCount++;
+							} else if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.HALLWAY) {
+								hallwayIdCount++;
+							} else if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.PATHWAY) {
+								pathwayIdCount++;
+							} else if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.STAIR) {
+								stairIdCount++;
+							} else if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.ELEVATOR) {
+								elevatorIdCount++;
+							} else if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_MENS) {
+								bathroomMensIdCount++;
+							} else if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_WOMENS) {
+								bathroomWomensIdCount++;
+							}
+						}
+					}
+				}
+			} else {
+				marker1 = getMarkerMapForType(path.marker1Data.type).get(path.marker1Data.id);
+			}
+		
+			if(!getMarkerMapForType(path.marker2Data.type).containsKey(path.marker2Data.id)){
+				if(path.marker2Data.type != GlobalStrings.PATHWAY) {
+					if((building == GlobalStrings.ALL_BUILDINGS || path.marker2Data.building == building) && path.marker2Data.floor == floor) {
+						marker2 = getMarkerFromId(path.marker2Data.id);
+						if (marker2 == null) {
+							marker2 = addMarker(path.marker2Data.cx, path.marker2Data.cy, markerTypeToColorMap.get(path.marker2Data.type));
+							marker2.data(GlobalStrings.ID, path.marker2Data.id);
+							if (path.marker2Data.type == GlobalStrings.ROOM || path.marker2Data.type == GlobalStrings.BATHROOM_MENS || path.marker2Data.type == GlobalStrings.BATHROOM_WOMENS) {
+								buildingToFloorMap.get(path.marker2Data.building).get(path.marker2Data.floor).get("shapes").forEach(function(element) {
+									var show = element.isVisible();
+									element.show();
+
+									if (!idIsValid(path.marker2Data.id) && element.data(GlobalStrings.ID) != "outline" && element.isPointInside(marker2.attr("cx"), marker2.attr("cy")) 
+										&& idIsValid(element.data(GlobalStrings.ID))) {
+										LOG.debug("Resetting marker id from " + path.marker2Data.id + " to " + element.data(GlobalStrings.ID));
+										marker2.data(GlobalStrings.ID, element.data(GlobalStrings.ID));
+										path.marker2Data.id = marker2.data(GlobalStrings.ID);
+										return false;
+									}
+
+									if (!show) {
+										element.hide();
+									} 
+								});
+							}
+							marker2.data(GlobalStrings.TYPE, path.marker2Data.type);
+							if (path.marker2Data.type != GlobalStrings.PATHWAY) {
+								marker2.data(GlobalStrings.BUILDING, path.marker2Data.building);
+								marker2.data(GlobalStrings.FLOOR, path.marker2Data.floor);
+							}
+							
+							if(!getMarkerMapForType(marker2.data(GlobalStrings.TYPE)).containsKey(marker2.data(GlobalStrings.ID))) {
+								getMarkerMapForType(marker2.data(GlobalStrings.TYPE)).set(marker2.data(GlobalStrings.ID), marker2);
+							}
+							
+							if(!typeToConnectionMap.containsKey(marker2.data(GlobalStrings.TYPE))){
+								typeToConnectionMap.get(marker2.data(GlobalStrings.TYPE)).set(marker2, newConnectionSet());
+							}
+
+							if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.DOOR) {
+								doorIdCount++;
+							} else if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.HALLWAY) {
+								hallwayIdCount++;
+							} else if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.PATHWAY) {
+								pathwayIdCount++;
+							} else if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.STAIR) {
+								stairIdCount++;
+							} else if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.ELEVATOR) {
+								elevatorIdCount++;
+							} else if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_MENS) {
+								bathroomMensIdCount++;
+							} else if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_WOMENS) {
+								bathroomWomensIdCount++;
+							}
+						}
+					}
+				}
+			} else {
+				marker2 = getMarkerMapForType(path.marker2Data.type).get(path.marker2Data.id);
+			}
+
+			if(marker1 != null && marker2 != null) {
+				var marker1ConnectionMap = getConnectionMapForType(marker1.data(GlobalStrings.TYPE));
+				var marker2ConnectionMap = getConnectionMapForType(marker2.data(GlobalStrings.TYPE));
+
+				var connectionSet = marker1ConnectionMap.get(marker1);
+				if (connectionSet == null) {
+					connectionSet = newConnectionSet();
+				}
+				var distance = getDistance(marker1, marker2);
+				var success = connectionSet.add(new Connection(marker2, distance));
+
+				var addedPath = null;
+
+				if (success) {
+					marker1ConnectionMap.set(marker1, connectionSet);
+				}
+
+				var connectionSet = marker2ConnectionMap.get(marker2);
+				if (connectionSet == null) {
+					connectionSet = newConnectionSet();
+				}
+
+				var success = connectionSet.add(new Connection(marker1, distance));
+				if (success) {
+					marker2ConnectionMap.set(marker2, connectionSet);
+				}
+
+				marker1.toFront();
+				marker2.toFront();
+			}
+		});
+	}
 }

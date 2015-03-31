@@ -117,3 +117,5 @@ function Logger(level) {
 		this.setLoggingLevel(level);
 	}
 }
+
+var LOG = new Logger(LoggingLevel.OFF);

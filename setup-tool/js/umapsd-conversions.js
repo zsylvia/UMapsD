@@ -20,8 +20,8 @@ function convertMarkersAndPathsToJson(roomMap, doorMap, hallwayMap, pathwayMap, 
 		graphJSON += "{";
 		graphJSON += "\"id\":\"" + path.marker1Data.id + "\"";
 		if (idsOfAddedMarkers.set(path.marker1Data.id, "") == null) {
-			graphJSON += ",\"x\":" + path.marker1Data.cx + ",";
-			graphJSON += "\"y\":" + path.marker1Data.cy;
+			graphJSON += ",\"x\":" + Math.floor(path.marker1Data.cx) + ",";
+			graphJSON += "\"y\":" + Math.floor(path.marker1Data.cy);
 		}
 		graphJSON += "},";
 
@@ -29,8 +29,8 @@ function convertMarkersAndPathsToJson(roomMap, doorMap, hallwayMap, pathwayMap, 
 		graphJSON += "{";
 		graphJSON += "\"id\":\"" + path.marker2Data.id + "\"";
 		if (idsOfAddedMarkers.set(path.marker2Data.id, "") == null) {
-			graphJSON += ",\"x\":" + path.marker2Data.cx + ",";
-			graphJSON += "\"y\":" + path.marker2Data.cy;
+			graphJSON += ",\"x\":" + Math.floor(path.marker2Data.cx) + ",";
+			graphJSON += "\"y\":" + Math.floor(path.marker2Data.cy);
 		}
 		graphJSON += "},";
 
@@ -180,10 +180,10 @@ function createAllMarkersFromJson(json, paper) {
 								type = GlobalStrings.STAIR;
 							} else if(typeId == GlobalStrings.ELEVATOR_ID) {
 								type = GlobalStrings.ELEVATOR;
-							} else if((typeId + "_" + parts[5]) == GlobalStrings.BATHROOM_MENS_ID) {
-								type = GlobalStrings.BATHROOM_MENS_ID;
-							} else if((typeId + "_" + parts[5]) == GlobalStrings.BATHROOM_WOMENS_ID) {
-								type = GlobalStrings.BATHROOM_WOMENS_ID;
+							} else if(typeId == GlobalStrings.BATHROOM_MENS_ID) {
+								type = GlobalStrings.BATHROOM_MENS;
+							} else if(typeId == GlobalStrings.BATHROOM_WOMENS_ID) {
+								type = GlobalStrings.BATHROOM_WOMENS;
 							}
 							
 							return type;
@@ -294,10 +294,10 @@ function createAllPathsFromJson(json, paper) {
 								type = GlobalStrings.STAIR;
 							} else if(typeId == GlobalStrings.ELEVATOR_ID) {
 								type = GlobalStrings.ELEVATOR;
-							} else if((typeId + "_" + parts[5]) == GlobalStrings.BATHROOM_MENS_ID) {
-								type = GlobalStrings.BATHROOM_MENS_ID;
-							} else if((typeId + "_" + parts[5]) == GlobalStrings.BATHROOM_WOMENS_ID) {
-								type = GlobalStrings.BATHROOM_WOMENS_ID;
+							} else if(typeId == GlobalStrings.BATHROOM_MENS_ID) {
+								type = GlobalStrings.BATHROOM_MENS;
+							} else if(typeId == GlobalStrings.BATHROOM_WOMENS_ID) {
+								type = GlobalStrings.BATHROOM_WOMENS;
 							}
 							
 							return type;
@@ -362,7 +362,6 @@ function createAllPathsFromJson(json, paper) {
 							}
 							markerDataSet = true;
 						}
-
 					}
 				});
 
