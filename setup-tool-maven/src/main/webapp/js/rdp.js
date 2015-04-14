@@ -26,6 +26,8 @@ var BATHROOM_MENS_TOOL_TIP_TEXT = "<b>Currently Plotting Bathrooms (Men's)</b><b
 	"Click inside an area to plot a marker for a men's bathroom.";
 var BATHROOM_WOMENS_TOOL_TIP_TEXT = "<b>Currently Plotting Bathrooms (Women's)</b><br>" +
 	"Click inside an area to plot a marker for a women's bathroom.";
+var PARKING_LOT_TOOL_TIP_TEXT = "<b>Currently Plotting Parking Lots</b><br>" +
+	"Click a location where a parking lot is located to plot a marker for it.";
 var MANUALLY_CONNECTING_MARKER_FROM = "Click on a marker to start a connection from. Or select \"Cancel Manual Connect\" to exit manual connecting mode";
 var MANUALLY_CONNECTING_MARKER_TO = "Click on another marker to make a connection. Or select \"Cancel Manual Connect\" to exit manual connecting mode";
 var REMOVE_MODE_TIP_TEXT = "You are in \"remove mode\". Click any marker or path to remove it.";
@@ -39,57 +41,10 @@ var plottingStair = 4;
 var plottingElevator = 5;
 var plottingBathroomMens = 6;
 var plottingBathroomWomens = 7;
-
-var markerTypeToColorMap = new buckets.Dictionary();
-markerTypeToColorMap.set(GlobalStrings.ROOM, GlobalStrings.COLOR.RED);
-markerTypeToColorMap.set(GlobalStrings.DOOR, GlobalStrings.COLOR.BLUE);
-markerTypeToColorMap.set(GlobalStrings.HALLWAY, GlobalStrings.COLOR.ORANGE);
-markerTypeToColorMap.set(GlobalStrings.PATHWAY, GlobalStrings.COLOR.GREEN);
-markerTypeToColorMap.set(GlobalStrings.STAIR, GlobalStrings.COLOR.PURPLE);
-markerTypeToColorMap.set(GlobalStrings.ELEVATOR, GlobalStrings.COLOR.YELLOW);
-markerTypeToColorMap.set(GlobalStrings.BATHROOM_MENS, GlobalStrings.COLOR.CYAN);
-markerTypeToColorMap.set(GlobalStrings.BATHROOM_WOMENS, GlobalStrings.COLOR.PINK);
+var plottingParkingLot = 8;
 
 var markerSize = 5;
 var pathStrokeWidth = 4;
-
-var typeToMarkerMap = new buckets.Dictionary();
-typeToMarkerMap.set(GlobalStrings.ROOM, roomMap);
-typeToMarkerMap.set(GlobalStrings.DOOR, doorMap);
-typeToMarkerMap.set(GlobalStrings.HALLWAY, hallwayMap);
-typeToMarkerMap.set(GlobalStrings.PATHWAY, pathwayMap);
-typeToMarkerMap.set(GlobalStrings.STAIR, stairMap);
-typeToMarkerMap.set(GlobalStrings.ELEVATOR, elevatorMap);
-typeToMarkerMap.set(GlobalStrings.BATHROOM_MENS, bathroomMensMap);
-typeToMarkerMap.set(GlobalStrings.BATHROOM_WOMENS, bathroomWomensMap);
-
-var roomConnectionMap = newConnectionMap();
-var doorConnectionMap = newConnectionMap();
-var hallwayConnectionMap = newConnectionMap();
-var pathwayConnectionMap = newConnectionMap();
-var stairConnectionMap = newConnectionMap();
-var elevatorConnectionMap = newConnectionMap();
-var bathroomMensConnectionMap = newConnectionMap();
-var bathroomWomensConnectionMap = newConnectionMap();
-
-var typeToConnectionMap = new buckets.Dictionary();
-typeToConnectionMap.set(GlobalStrings.ROOM, roomConnectionMap);
-typeToConnectionMap.set(GlobalStrings.DOOR, doorConnectionMap);
-typeToConnectionMap.set(GlobalStrings.HALLWAY, hallwayConnectionMap);
-typeToConnectionMap.set(GlobalStrings.PATHWAY, pathwayConnectionMap);
-typeToConnectionMap.set(GlobalStrings.STAIR, stairConnectionMap);
-typeToConnectionMap.set(GlobalStrings.ELEVATOR, elevatorConnectionMap);
-typeToConnectionMap.set(GlobalStrings.BATHROOM_MENS, bathroomMensConnectionMap);
-typeToConnectionMap.set(GlobalStrings.BATHROOM_WOMENS, bathroomWomensConnectionMap);
-
-// These counts are just used when naming, the number does not matter it only removes duplicates
-var doorIdCount = 0;
-var hallwayIdCount = 0;
-var pathwayIdCount = 0;
-var stairIdCount = 0;
-var elevatorIdCount = 0;
-var bathroomMensIdCount = 0;
-var bathroomWomensIdCount = 0;
 
 var manuallyConnectingMode = false;
 var manuallyConnectingMarker = false;
@@ -107,7 +62,6 @@ var showingPath = false;
 var testingForBadPaths = false;
 
 var draggingMarkerIgnoreClick = false;
-var mouseOnMarker = false;
 
 var graph;
 
@@ -120,15 +74,6 @@ var sessionTime = new Date().getTime();
 var movingAllMarkers = false;
 
 var LOG = new Logger(LoggingLevel.ALL);
-
-function Connection(marker, distance) {
-	this.marker = marker;
-	this.distance = distance;
-
-	this.toString = function() {
-		return marker1.data(GlobalStrings.ID) + "-" + distance;
-	}
-}
 
 function Path(element, marker1Data, marker2Data, distance) {
 	this.element = element;
@@ -527,15 +472,19 @@ function handleClick(ev, secondTry) {
 			if (!pathClicked) {
 				var clickedElement = null;
 
-				if (currentlyPlotting == plottingRoom || currentlyPlotting == plottingBathroomMens || currentlyPlotting == plottingBathroomWomens) {
-					paper.forEach(function(element) {
-						if (element.isPointInside(clickX, clickY)) {
-							// TODO: Find better solution then explicitly writing outline
-							if (element.type != "text" && element.data(GlobalStrings.ID) != "outline") {
-								clickedElement = element;
-								return false;
-							}
-						}
+				if (currentlyPlotting == plottingRoom || currentlyPlotting == plottingBathroomMens || currentlyPlotting == plottingBathroomWomens
+						|| currentlyPlotting == plottingParkingLot) {
+					buildingToFloorMap.forEach(function(building, floorToShapeListAndNameMap) {
+						floorToShapeListAndNameMap.forEach(function(floor, shapeListAndNameMap) {
+							shapeListAndNameMap.get("shapes").forEach(function(shape) {
+								if (shape.isPointInside(clickX, clickY)) {
+									if (shape.type != "text" && shape.data(GlobalStrings.ID) != "outline") {
+										clickedElement = shape;
+										return false;
+									}
+								}
+							});
+						});
 					});
 				}
 				
@@ -663,15 +612,6 @@ function removeMarkerWithId(id) {
 	removeMarker(marker);
 }
 
-function getMarkerColorFromType(type) {
-	var color = markerTypeToColorMap.get(type);
-
-	if (color == null) {
-		color = "black";
-	}
-	return color;
-}
-
 function getMarkerData(marker) {
 	var markerData;
 	if (marker.data(GlobalStrings.TYPE) == GlobalStrings.PATHWAY) {
@@ -689,14 +629,6 @@ function getTotalNumberOfMarkers() {
 		totalMarkers += markerMap.size();
 	});
 	return totalMarkers;
-}
-
-function getConnectionMapForType(type) {
-	return typeToConnectionMap.get(type);
-}
-
-function getMarkerMapForType(type) {
-	return typeToMarkerMap.get(type);
 }
 
 function cancelManualConnect(cancelManuallyConnectingMode) {
@@ -781,6 +713,12 @@ function plotMarker(x, y, element) {
 			case plottingBathroomWomens:
 				marker = plotBathroomWomens(x, y, currentBuilding, currentFloor, element.data(GlobalStrings.ID));
 				break;
+			case plottingParkingLot:
+				if (element != null) {
+					marker = plotParkingLot(x, y, element.data(GlobalStrings.ID));
+				} else {
+					alertDialog("Cannot plot marker for parking lot. The selected point is not inside an area");
+				}
 		}
 
 		if (marker != null) {
@@ -823,7 +761,7 @@ function plotRoom(x, y, building, floor, elementId) {
 		marker.data(GlobalStrings.FLOOR, floor);
 		marker.data(GlobalStrings.TYPE, GlobalStrings.ROOM);
 
-		roomMap.set(marker.data(GlobalStrings.ID), marker);
+		typeToMarkerMap.get(GlobalStrings.ROOM).set(marker.data(GlobalStrings.ID), marker);
 	}
 
 	// Need to explicitly add to undo stack here because we said not to above
@@ -842,7 +780,7 @@ function plotDoor(x, y, building, floor) {
 	marker.data(GlobalStrings.BUILDING, building);
 	marker.data(GlobalStrings.FLOOR, floor);
 	marker.data(GlobalStrings.TYPE, GlobalStrings.DOOR);
-	doorMap.set(marker.data(GlobalStrings.ID), marker);
+	typeToMarkerMap.get(GlobalStrings.DOOR).set(marker.data(GlobalStrings.ID), marker);
 
 	return marker;
 }
@@ -855,7 +793,7 @@ function plotHallway(x, y, building, floor) {
 	marker.data(GlobalStrings.BUILDING, building);
 	marker.data(GlobalStrings.FLOOR, floor);
 	marker.data(GlobalStrings.TYPE, GlobalStrings.HALLWAY);
-	hallwayMap.set(marker.data(GlobalStrings.ID), marker);
+	typeToMarkerMap.get(GlobalStrings.HALLWAY).set(marker.data(GlobalStrings.ID), marker);
 
 	return marker;
 }
@@ -866,7 +804,7 @@ function plotPathway(x, y) {
 	marker = addMarker(x, y, markerTypeToColorMap.get(GlobalStrings.PATHWAY));
 	marker.data(GlobalStrings.ID, id);
 	marker.data(GlobalStrings.TYPE, GlobalStrings.PATHWAY);
-	pathwayMap.set(marker.data(GlobalStrings.ID), marker);
+	typeToMarkerMap.get(GlobalStrings.PATHWAY).set(marker.data(GlobalStrings.ID), marker);
 
 	return marker;
 }
@@ -879,7 +817,7 @@ function plotStair(x, y, building, floor) {
 	marker.data(GlobalStrings.BUILDING, building);
 	marker.data(GlobalStrings.FLOOR, floor);
 	marker.data(GlobalStrings.TYPE, GlobalStrings.STAIR);
-	stairMap.set(marker.data(GlobalStrings.ID), marker);
+	typeToMarkerMap.get(GlobalStrings.STAIR).set(marker.data(GlobalStrings.ID), marker);
 
 	return marker;
 }
@@ -892,7 +830,7 @@ function plotElevator(x, y, building, floor) {
 	marker.data(GlobalStrings.BUILDING, building);
 	marker.data(GlobalStrings.FLOOR, floor);
 	marker.data(GlobalStrings.TYPE, GlobalStrings.ELEVATOR);
-	elevatorMap.set(marker.data(GlobalStrings.ID), marker);
+	typeToMarkerMap.get(GlobalStrings.ELEVATOR).set(marker.data(GlobalStrings.ID), marker);
 
 	return marker;
 }
@@ -910,7 +848,7 @@ function plotBathroomMens(x, y, building, floor, elementId) {
 	marker.data(GlobalStrings.BUILDING, building);
 	marker.data(GlobalStrings.FLOOR, floor);
 	marker.data(GlobalStrings.TYPE, GlobalStrings.BATHROOM_MENS);
-	bathroomMensMap.set(marker.data(GlobalStrings.ID), marker);
+	typeToMarkerMap.get(GlobalStrings.BATHROOM_MENS).set(marker.data(GlobalStrings.ID), marker);
 
 	return marker;
 }
@@ -928,7 +866,23 @@ function plotBathroomWomens(x, y, building, floor, elementId) {
 	marker.data(GlobalStrings.BUILDING, building);
 	marker.data(GlobalStrings.FLOOR, floor);
 	marker.data(GlobalStrings.TYPE, GlobalStrings.BATHROOM_WOMENS);
-	bathroomWomensMap.set(marker.data(GlobalStrings.ID), marker);
+	typeToMarkerMap.get(GlobalStrings.BATHROOM_WOMENS).set(marker.data(GlobalStrings.ID), marker);
+
+	return marker;
+}
+
+function plotParkingLot(x, y, elementId) {
+	var id;
+	if (idIsValid(elementId)) {
+		id = elementId;
+	} else {
+		id = GlobalStrings.PARKING_LOT_ID + "_" + elementId;
+	}
+	LOG.info("Plotting new parking lot " + id + " at (" + x + "," + y + ")");
+	marker = addMarker(x, y, markerTypeToColorMap.get(GlobalStrings.PARKING_LOT));
+	marker.data(GlobalStrings.ID, id);
+	marker.data(GlobalStrings.TYPE, GlobalStrings.PARKING_LOT);
+	typeToMarkerMap.get(GlobalStrings.PARKING_LOT).set(marker.data(GlobalStrings.ID), marker);
 
 	return marker;
 }
@@ -945,19 +899,6 @@ function addMarker(x, y, color) {
 	}
 
 	return marker;
-}
-
-function getMarkerFromId(id) {
-	var returnMarker = null;
-
-	allMarkers.forEach(function(markerMap) {
-		returnMarker = markerMap.get(id);
-		if (returnMarker != null) {
-			return false;
-		}
-	});
-
-	return returnMarker;
 }
 
 function autoConnect() {
@@ -1368,18 +1309,6 @@ function newMarkerSet() {
 	});
 }
 
-function newConnectionSet() {
-	return new buckets.Set(function connectionToString(connection) {
-		return connection.marker.data(GlobalStrings.ID);
-	});
-}
-
-function newConnectionMap() {
-	return new buckets.Dictionary(function markerToString(marker) {
-		return marker.data(GlobalStrings.ID);
-	});
-}
-
 function markerIdNull(marker) {
 	return marker.data(GlobalStrings.ID) == null;
 }
@@ -1476,23 +1405,6 @@ function formatBathroomWomensId(building, floor) {
 	return id;
 }
 
-function getDistance(marker1, marker2) {
-	return dist(marker1.attr("cx"), marker1.attr("cy"), marker2.attr("cx"), marker2.attr("cy"));
-}
-
-function dist(point1X, point1Y, point2X, point2Y) {
-	var xs = 0;
-	var ys = 0;
-
-	xs = point2X - point1X;
-	xs = xs * xs;
-
-	ys = point2Y - point1Y;
-	ys = ys * ys;
-
-	return Math.floor(Math.sqrt(xs + ys));
-}
-
 // When plotting radio button is clicked
 
 function plotSelect(type) {
@@ -1512,6 +1424,8 @@ function plotSelect(type) {
 		bathroomMensSelected();
 	} else if (type == GlobalStrings.BATHROOM_WOMENS) {
 		bathroomWomensSelected();
+	} else if (type == GlobalStrings.PARKING_LOT) {
+		parkingLotSelected();
 	} else {
 		LOG.warn("plotSelect called with invalid type " + type);
 	}
@@ -1565,6 +1479,12 @@ function bathroomWomensSelected() {
 	setToolTipTextForCurrentlyPlotting();
 }
 
+function parkingLotSelected() {
+	LOG.debug("Parking lot plotting selected");
+	currentlyPlotting = plottingParkingLot;
+	setToolTipTextForCurrentlyPlotting();
+}
+
 function setToolTipTextForCurrentlyPlotting() {
 	var toolTipText = "";
 	switch (currentlyPlotting) {
@@ -1594,6 +1514,9 @@ function setToolTipTextForCurrentlyPlotting() {
 			break;
 		case plottingBathroomWomens:
 			toolTipText = BATHROOM_WOMENS_TOOL_TIP_TEXT;
+			break;
+		case plottingParkingLot:
+			toolTipText = PARKING_LOT_TOOL_TIP_TEXT;
 			break;
 	}
 	setToolTipText(toolTipText);
@@ -1843,7 +1766,7 @@ function generateGraph() {
 		});
 	});
 
-	var converted = convertMarkersAndPathsToJson(roomMap, doorMap, hallwayMap, pathwayMap, stairMap, elevatorMap, bathroomMensMap, bathroomWomensMap, pathMap);
+	var converted = convertMarkersAndPathsToJson(allMarkers, pathMap);
 	
 	showShapesForCurrentBuildingAndFloor();
 	showMarkersForCurrentBuildingAndFloor();
@@ -2004,14 +1927,6 @@ function findPath(marker1ID, marker2ID) {
 	LOG.trace("Took " + (new Date().getTime() - start) + " ms to find and show path from " + marker1ID + " to " + marker2ID);
 }
 
-function executeOnAllMarkers(func) {
-	allMarkers.forEach(function(markerMap) {
-		markerMap.forEach(function(markerId, marker) {
-			func(marker);
-		});
-	});
-}
-
 function testForBadPaths() {
 	if (testingForBadPaths) {
 		$("#testing_dropdown").toggle();
@@ -2083,7 +1998,7 @@ function testForBadPaths() {
 	}
 }
 
-function pop() {
+function formatMarker() {
 	var markerFormContent = "<form id='marker_form' onchange='markerFormChanged()' style='width: 244px'>" +
 		"Use this form to select and format the type of marker to plot" +
 		"<div class='form-group'>" +
@@ -2165,6 +2080,9 @@ function markerFormChanged() {
 			break;
 		case GlobalStrings.BATHROOM_WOMENS:
 			currentlyPlotting = plottingBathroomWomens;
+			break;
+		case GlobalStrings.PARKING_LOT:
+			currentlyPlotting = plottingParkingLot;
 			break;
 	}
 }
