@@ -1045,3 +1045,146 @@ function getMarkerColorFromType(type) {
 	}
 	return color;
 }
+
+function getBuildingFromId(id) {
+	if(id.search(GlobalStrings.PATHWAY_ID) == -1) {
+		var parts = id.split("_");
+		if(parts[0] == GlobalStrings.BUILDING_ID) {
+			return parts[1];
+		}
+	} else {
+		return "";
+	}
+}
+
+function getFloorFromId(id) {
+	if(id.search(GlobalStrings.PATHWAY_ID) == -1) {
+		var parts = id.split("_");
+		if(parts[0] == GlobalStrings.BUILDING_ID) {
+			if(parts[2] == GlobalStrings.FLOOR_ID) {
+				return parts[3];
+			}
+		}
+	} else {
+			return "";
+	}
+}
+
+function getRoomFromRoomId(roomId) {
+	return roomId.substr(roomId.lastIndexOf(GlobalStrings.ROOM_ID + "_") + 3);
+}
+
+function getClosestMarkerToPoint(x, y) {
+	var closestMarker;
+	var closestDistance;
+	allMarkers.forEach(function(markerMap){
+		markerMap.forEach(function(markerId, marker){
+			var distance = dist(x, y, marker.attr("cx"), marker.attr("cy"));
+			if(closestMarker == null || distance < closestDistance) {
+				closestMarker = marker;
+				closestDistance = distance;
+			}
+		});
+	});
+	return closestMarker;
+}
+
+function formatRoomId(building, floor, room) {
+	return GlobalStrings.BUILDING_ID + "_" + building + "_" + GlobalStrings.FLOOR_ID + "_" + floor + "_" + GlobalStrings.ROOM_ID + "_" + room;
+}
+
+function formatDoorId(building, floor) {
+	var id = null;
+	while (id == null) {
+		doorIdCount++;
+		var tmpId = GlobalStrings.BUILDING_ID + "_" + building + "_" + GlobalStrings.FLOOR_ID + "_" + floor + "_" + GlobalStrings.DOOR_ID + "_" + doorIdCount;
+		if (!doorMap.containsKey(tmpId)) {
+			id = tmpId;
+		}
+	}
+	return id;
+}
+
+function formatHallwayId(building, floor) {
+	var id = null;
+	while (id == null) {
+		hallwayIdCount++;
+		var tmpId = GlobalStrings.BUILDING_ID + "_" + building + "_" + GlobalStrings.FLOOR_ID + "_" + floor + "_" + GlobalStrings.HALLWAY_ID + "_" + hallwayIdCount;
+		if (!hallwayMap.containsKey(tmpId)) {
+			id = tmpId;
+		}
+	}
+	return id;
+}
+
+function formatPathwayId() {
+	var id = null;
+	while (id == null) {
+		pathwayIdCount++;
+		var tmpId = GlobalStrings.PATHWAY_ID + "_" + pathwayIdCount;
+		if (!pathwayMap.containsKey(tmpId)) {
+			id = tmpId;
+		}
+	}
+	return id;
+}
+
+function formatStairId(building, floor) {
+	var id = null;
+	while (id == null) {
+		stairIdCount++;
+		var tmpId = GlobalStrings.BUILDING_ID + "_" + building + "_" + GlobalStrings.FLOOR_ID + "_" + floor + "_" + GlobalStrings.STAIR_ID + "_" + stairIdCount;
+		if (!stairMap.containsKey(tmpId)) {
+			id = tmpId;
+		}
+	}
+	return id;
+}
+
+function formatElevatorId(building, floor) {
+	var id = null;
+	while (id == null) {
+		elevatorIdCount++;
+		var tmpId = GlobalStrings.BUILDING_ID + "_" + building + "_" + GlobalStrings.FLOOR_ID + "_" + floor + "_" + GlobalStrings.ELEVATOR_ID + "_" + elevatorIdCount;
+		if (!elevatorMap.containsKey(tmpId)) {
+			id = tmpId;
+		}
+	}
+	return id;
+}
+
+function formatBathroomMensId(building, floor) {
+	var id = null;
+	while (id == null) {
+		bathroomMensIdCount++;
+		var tmpId = GlobalStrings.BUILDING_ID + "_" + building + "_" + GlobalStrings.FLOOR_ID + "_" + floor + "_" + GlobalStrings.BATHROOM_MENS_ID + "_" + bathroomMensIdCount;
+		if (!bathroomMensMap.containsKey(tmpId)) {
+			id = tmpId;
+		}
+	}
+	return id;
+}
+
+function formatBathroomWomensId(building, floor) {
+	var id = null;
+	while (id == null) {
+		bathroomWomensIdCount++;
+		var tmpId = GlobalStrings.BUILDING_ID + "_" + building + "_" + GlobalStrings.FLOOR_ID + "_" + floor + "_" + GlobalStrings.BATHROOM_WOMENS_ID + "_" + bathroomWomensIdCount;
+		if (!bathroomWomensMap.containsKey(tmpId)) {
+			id = tmpId;
+		}
+	}
+	return id;
+}
+
+function formatParkingLotId(parkingLot) {
+	return GlobalStrings.PARKING_LOT_ID + "_" + parkingLot;
+}
+
+function formatDormId(dorm) {
+	return GlobalStrings.DORM_ID + "_" + dorm;
+}
+
+function formatMiscId(misc) {
+	return GlobalStrings.MISC_ID + "_" + misc;
+}
