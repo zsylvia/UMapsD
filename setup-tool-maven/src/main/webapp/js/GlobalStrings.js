@@ -115,7 +115,7 @@ var GlobalStrings = {
 	forEachMarkerStringPair: function(func) {
 		this.forEachStringPair(function(normal, display){
 			if(normal != GlobalStrings.FLOOR && normal != GlobalStrings.BUILDING && !GlobalStrings.COLOR.hasOwnProperty(normal.toUpperCase())
-					&& normal != GlobalStrings.ALL_BUILDINGS) {
+					&& normal != GlobalStrings.ALL_BUILDINGS && normal != GlobalStrings.CLOSEST_BATHROOM_MENS && normal != GlobalStrings.CLOSEST_BATHROOM_WOMENS) {
 				func(normal, display);
 			}
 		});

@@ -69,9 +69,13 @@ var markerFormShowing = false;
 var selectedMarkerType = GlobalStrings.ROOM;
 var changeBuildingFloorShowing = false;
 
-var sessionTime = new Date().getTime();
+var sessionTime = now();
 
 var movingAllMarkers = false;
+
+var connectingFloors = false;
+
+var disposableMarkerText = new buckets.Dictionary();
 
 var LOG = new Logger(LoggingLevel.ALL);
 
@@ -300,32 +304,22 @@ function Command() {
 }
 
 $(document).ready(function() {
-	setMarkersInvisible(false);
-	setFloorSelectorForBuilding(currentBuilding, currentFloor);
-	
-	//Initally show room tool tip
-	roomSelected();
+	setTimeout(function(){
+		setMarkersInvisible(false);
+		setFloorSelectorForBuilding(currentBuilding, currentFloor);
+		
+		//Initally show room tool tip
+		roomSelected();
 
-	$("#plot_markers_popover").popover({
-		placement: "bottom",
-		html: true
-	});
-	$("#change_building_floor_popover").popover({
-		placement: "bottom",
-		html: true
-	});
-
-	$("#graph_input").change(function(event) {
-		var file = event.target.files[0];
-
-		var reader = new FileReader();
-
-		reader.onload = function(readFile) {
-			loadGraphData(readFile.target.result);
-		}
-
-		reader.readAsText(file);
-	});
+		$("#plot_markers_popover").popover({
+			placement: "bottom",
+			html: true
+		});
+		$("#change_building_floor_popover").popover({
+			placement: "bottom",
+			html: true
+		});
+	}, 50);
 });
 
 function setMarkerDragEventHandlers(marker) {
@@ -372,6 +366,13 @@ function markerDragEventMove(marker, dx, dy, x, y, event) {
 		cx: (marker.data("drag_start_cx") + dx),
 		cy: (marker.data("drag_start_cy") + dy)
 	});
+	var markerText = disposableMarkerText.get(marker.data(GlobalStrings.ID));
+	if(markerText != null) {
+		markerText.attr({
+			x: marker.attr("cx"),
+			y: marker.attr("cy")
+		});
+	}
 
 	var markerConnectionSet = typeToConnectionMap.get(marker.data(GlobalStrings.TYPE)).get(marker);
 	if (markerConnectionSet != null) {
@@ -515,16 +516,10 @@ function handleClick(ev, secondTry) {
 		});
 		handleMarkerClick(marker);
 	} else if (ev.target.getAttribute("customNodeName") == "path") {
-		var pathElement;
 		var pathObject;
-		paper.forEach(function(element) {
-			if (element.isPointInside(clickX, clickY) && element.type == "path") {
-				pathElement = element;
-				return false;
-			}
-		});
+		
 		pathMap.forEach(function(pathString, path) {
-			if (path.element == pathElement) {
+			if (path.element.isPointInside(clickX, clickY)) {
 				pathObject = path;
 				return false;
 			}
@@ -888,7 +883,7 @@ function plotParkingLot(x, y, elementId) {
 }
 
 function addMarker(x, y, color) {
-	var marker = paper.circle(x, y, markerSize/paperResizeRatio).attr({
+	var marker = paper.circle(x, y, markerSize).attr({
 		fill: color
 	});
 
@@ -1471,6 +1466,10 @@ function disableAllButtons() {
 	$("#move_all_markers_button").attr("disabled", true);
 	$("#cancel_manual_connect_button").attr("disabled", true);
 	$("#finished_moving_markers_button").attr("disabled", true);
+	$("#marker_opts_dropdown").attr("disabled", true);
+	$("#connect_floors_button").attr("disabled", true);
+	$("#rename_tool_button").attr("disabled", true);
+	$("#main_app_button").attr("disabled", true);
 }
 
 function disableAllButtonsExcept(buttonId) {
@@ -1494,65 +1493,106 @@ function enableAllButtons() {
 	$("#move_all_markers_button").attr("disabled", false);
 	$("#cancel_manual_connect_button").attr("disabled", false);
 	$("#finished_moving_markers_button").attr("disabled", false);
+	$("#marker_opts_dropdown").attr("disabled", false);
+	$("#connect_floors_button").attr("disabled", false);
+	$("#rename_tool_button").attr("disabled", false);
+	$("#main_app_button").attr("disabled", false);
 }
 
 function generateGraph() {
 	var start = new Date().getTime();
-	graph = new Graph();
 	
 	// Make sure all markers are loaded before creating the graph
 	buildingToFloorIdsMap.forEach(function(building, floorList){
 		floorList.forEach(function(floor){
-			loadShapesForBuildingAndFloor(building, floor);
+//			loadShapesForBuildingAndFloor(building, floor);
 			loadMarkersForBuildingAndFloor(building, floor);
 		});
 	});
+	
+	var handicap = false;
 
+	var nonHandicapGraph = new Graph();
+	var handicapGraph = new Graph();
+	
 	allMarkers.forEach(function(markerMap) {
 		markerMap.forEach(function(markerId, marker) {
-			var connectionsString = "";
+			var nonHandicapConnectionString = [];
+			var handicapConnectionString = [];
 			var firstConnection = true;
 
 			var markerConnectionSet = typeToConnectionMap.get(marker.data(GlobalStrings.TYPE)).get(marker);
-			markerConnectionSet.forEach(function(connection) {
-				if (firstConnection) {
-					firstConnection = false;
-				} else {
-					connectionsString += ", ";
-				}
+			if(markerConnectionSet != null) {
+				markerConnectionSet.forEach(function(connection) {
+					if (firstConnection) {
+						firstConnection = false;
+					} else {
+						nonHandicapConnectionString.push(", ");
+						handicapConnectionString.push(", ");
+					}
 
-				if (marker.data(GlobalStrings.TYPE) == GlobalStrings.ROOM || connection.marker.data(GlobalStrings.TYPE) == GlobalStrings.ROOM) {
-					connectionsString += connection.marker.data(GlobalStrings.ID) + ": " + (connection.distance * 5);
-				} else {
-					connectionsString += connection.marker.data(GlobalStrings.ID) + ": " + connection.distance;
-				}
-			});
+					if (marker.data(GlobalStrings.TYPE) == GlobalStrings.ROOM || connection.marker.data(GlobalStrings.TYPE) == GlobalStrings.ROOM) {
+						nonHandicapConnectionString.push(connection.marker.data(GlobalStrings.ID) + ": " + (connection.distance * 5));
+						handicapConnectionString.push(connection.marker.data(GlobalStrings.ID) + ": " + (connection.distance * 5));
+					} else if(marker.data(GlobalStrings.TYPE) == GlobalStrings.STAIRS) {
+						nonHandicapConnectionString.push(connection.marker.data(GlobalStrings.ID) + ": " + connection.distance);
+						handicapConnectionString.push(connection.marker.data(GlobalStrings.ID) + ": " + (connection.distance * 5000));
+					} else if(marker.data(GlobalStrings.TYPE) == GlobalStrings.ELEVATOR) {
+						nonHandicapConnectionString.push(connection.marker.data(GlobalStrings.ID) + ": " + (connection.distance * 5000));
+						handicapConnectionString.push(connection.marker.data(GlobalStrings.ID) + ": " + connection.distance);
+					} else {
+						nonHandicapConnectionString.push(connection.marker.data(GlobalStrings.ID) + ": " + connection.distance);
+						handicapConnectionString.push(connection.marker.data(GlobalStrings.ID) + ": " + connection.distance);
+					}
+				});
 
-			if (connectionsString != "") {
-				graph.addVertex("" + marker.data(GlobalStrings.ID) + "", eval("({" + connectionsString + "})"));
+				if (nonHandicapConnectionString.length != 0) {
+					nonHandicapGraph.addVertex("" + marker.data(GlobalStrings.ID) + "", eval("({" + nonHandicapConnectionString.join("") + "})"));
+				}
+				if(handicapConnectionString.length != 0) {
+					handicapGraph.addVertex("" + marker.data(GlobalStrings.ID) + "", eval("({" + handicapConnectionString.join("") + "})"));
+				}
 			}
 		});
 	});
 
+	graph = nonHandicapGraph;
+	
 	var converted = convertMarkersAndPathsToJson(allMarkers, pathMap);
 	
 	showShapesForCurrentBuildingAndFloor();
 	showMarkersForCurrentBuildingAndFloor();
 
 	LOG.trace("Took " + (new Date().getTime() - start) + " ms to generate graph");
+	
+	
+//	var svg = paper.toSVG()
+//	paper = null;
+//	$("#raphael").html("");
+//	
+//	setTimeout(function() {
+//		paper = new ScaleRaphael(raphaelDiv, $(raphaelDivJQuery).width(), $(raphaelDivJQuery).height());
+//		paper.importSVG(svg);
+//		console.log("DONE");
+//	}, 100);
 
 	 var request = $.ajax({
 	 	url: "graphUpload",
 	 	type: "POST",
 	 	data: {
 	 		graph: $.param(converted),
-	 		sessionTime: sessionTime
+	 		sessionTime: sessionTime,
+	 		nonHandicapGraphVertices: JSON.stringify(nonHandicapGraph.vertices),
+	 		handicapGraphVertices: JSON.stringify(handicapGraph.vertices)
 	 	},
 	 	dataType: "html"
 	 });
 	
 	 request.fail(function(jqXHR, textStatus) {
 	 	alert("Request failed: " + textStatus);
+	 	LOG.error("Save request failed. Printing graph below so all work is not lost. This can be copy and pasted into the graph.js file");
+	 	// Using console.log() so even if logging is shut off, the graph will be printed on an error
+	 	console.log(JSON.stringify(converted));
 	 });
 	
 	return true;
@@ -1928,9 +1968,17 @@ function hideChangeBuildingFloorPopover() {
 	$("#change_building_floor_popover").html(popoverCaretDown);
 	$("#change_building_floor_popover").popover('toggle');
 	changeBuildingFloorShowing = !changeBuildingFloorShowing;
+	if(buildingAndFloorChanged) {
+		loadChangedBuildingAndFloor();
+		buildingAndFloorChanged = false;
+	}
 }
 
 function changeBuildingFloorChanged() {
+	buildingAndFloorChanged = true;
+}
+
+function loadChangedBuildingAndFloor() {
 	var selectedBuilding;
 	if ($("#building_selector").val() == GlobalStrings.ALL_BUILDINGS_DISPLAY) {
 		selectedBuilding = GlobalStrings.ALL_BUILDINGS;
@@ -2025,3 +2073,105 @@ function moveAllMarkers() {
 		disableAllButtonsExcept("finished_moving_markers_button");
 	}
 }
+
+function connectFloors() {
+	if(connectingFloors) {
+		connectingFloors = false;
+		cancelManualConnect(true);
+		showMarkersForCurrentBuildingAndFloor();
+		$("#connect_floors_button").html("Connect Floors");
+		enableAllButtons();
+		disposableMarkerText.forEach(function(markerId, textElement){
+			var marker;
+			marker = stairMap.get(markerId);
+			if(marker == null) {
+				marker = elevatorMap.get(markerId);
+			}
+			if(marker != null) {
+				marker.attr("opacity", 1);
+			}
+			textElement.remove();
+		});
+	} else {
+		LOG.debug("Connect floors selected");
+		var totalMarkers = getTotalNumberOfMarkers();
+		if (totalMarkers > 1) {
+			manuallyConnectingMode = true;
+			manuallyConnectingMarker = true;
+			
+			connectingFloors = true;
+			$("#connect_floors_button").html("Exit Connecting Floors");
+			disableAllButtonsExcept("connect_floors_button");
+			buildingToFloorIdsMap.get(currentBuilding).forEach(function(floor){
+				loadMarkersForBuildingAndFloor(currentBuilding, floor);
+			});
+			hideAllMarkers();
+			hideAllPaths();
+			stairMap.forEach(function(markerId, marker){
+				if(currentBuilding == GlobalStrings.ALL_BUILDINGS || marker.data(GlobalStrings.BUILDING) == currentBuilding) {
+					var connectionMap = typeToConnectionMap.get(marker.data(GlobalStrings.TYPE)).get(marker);
+					if(connectionMap != null) {
+						var pMap = pathMap;
+						connectionMap.forEach(function(connection){
+							if(connection.marker.data(GlobalStrings.TYPE) == GlobalStrings.STAIR) {
+								var path = pMap.get(marker.data(GlobalStrings.ID) + "<->" + connection.marker.data(GlobalStrings.ID));
+								if(path == null) {
+									path = pMap.get(connection.marker.data(GlobalStrings.ID) + "<->" + marker.data(GlobalStrings.ID));
+								}
+								if(path != null) {
+									path.element.show().toFront();
+								} else {
+									LOG.error("Could not find path between " + marker.data(GlobalStrings.ID) + " and " + connection.marker.data(GlobalStrings.ID));
+								}
+							}
+						});
+					}
+					
+					disposableMarkerText.set(marker.data(GlobalStrings.ID), paper.text(marker.attr("cx"), marker.attr("cy"), marker.data(GlobalStrings.FLOOR)).attr({"font-size": marker.attr("r")}).toFront());
+					marker.show().toFront().attr("opacity", .5);
+				}
+			});
+			elevatorMap.forEach(function(markerId, marker){
+				if(currentBuilding == GlobalStrings.ALL_BUILDINGS || marker.data(GlobalStrings.BUILDING) == currentBuilding) {
+					var connectionMap = typeToConnectionMap.get(marker.data(GlobalStrings.TYPE)).get(marker);
+					if(connectionMap != null) {
+						var pMap = pathMap;
+						connectionMap.forEach(function(connection){
+							if(connection.marker.data(GlobalStrings.TYPE) == GlobalStrings.STAIR) {
+								var path = pMap.get(marker.data(GlobalStrings.ID) + "<->" + connection.marker.data(GlobalStrings.ID));
+								if(path == null) {
+									path = pMap.get(connection.marker.data(GlobalStrings.ID) + "<->" + marker.data(GlobalStrings.ID));
+								}
+								if(path != null) {
+									path.element.show().toFront();
+								} else {
+									LOG.error("Could not find path between " + marker.data(GlobalStrings.ID) + " and " + connection.marker.data(GlobalStrings.ID));
+								}
+							}
+						});
+					}
+					
+					disposableMarkerText.set(marker.data(GlobalStrings.ID), paper.text(marker.attr("cx"), marker.attr("cy"), marker.data(GlobalStrings.FLOOR)).attr({"font-size": marker.attr("r")}).toFront());
+					marker.show().toFront().attr("opacity", .5);
+				}
+			});
+		} else {
+			alertDialog("There are not enough markers to make a connection");
+		}
+	}
+}
+
+function hideAllMarkers() {
+	allMarkers.forEach(function(markerMap) {
+		markerMap.forEach(function(markerId, marker){
+			marker.hide();
+		});
+	});
+}
+
+function hideAllPaths() {
+	pathMap.forEach(function(pathString, pathObject) {
+		pathObject.element.hide();
+	});
+}
+

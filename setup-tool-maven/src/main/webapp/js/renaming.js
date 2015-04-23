@@ -12,71 +12,92 @@ var sessionTime = new Date().getTime();
 
 var currentHoveredShape = null;
 
-var renameDialogOpen = false;
-
 var removeNamesMode = false;
+
+var shapeToNameMap = new buckets.Dictionary(function shapeToString(shape) {
+	return shape.data(GlobalStrings.ID);
+});
 
 var LOG = new Logger(LoggingLevel.ALL);
 
 $(document).ready(function() {
-	$("#change_building_floor_popover").popover({
-		placement: "bottom",
-		html: true
-	});
-	importNameChangeMap();
 	
-	$(raphaelDivJQuery).mousemove(function(event) {
-		var ignoreEvent = false;
-		try {
-			ignoreEvent = mouseOnMarker;
-		} catch (err) {
-			if (err.name == "ReferenceError") {
-				// Ignore...
-			} else {
-				console.error(err.stack);
+	setTimeout(function(){
+		$("#change_building_floor_popover").popover({
+			placement: "bottom",
+			html: true
+		});
+		importNameChangeMap();
+		
+		$(raphaelDivJQuery).mousemove(function(event) {
+			var ignoreEvent = false;
+			try {
+				ignoreEvent = mouseOnMarker;
+			} catch (err) {
+				if (err.name == "ReferenceError") {
+					// Ignore...
+				} else {
+					console.error(err.stack);
+				}
 			}
-		}
-		if(!mouseDown && !renameDialogOpen) {
-			var mousePosX;
-			var mousePosY;
-			if(event.target.nodeName == "tspan") {
-				mousePosX = event.pageX * paperResizeRatio + paperShiftX;
-				mousePosY = (event.pageY - ($(document).height() - $("#raphael").height()))*paperResizeRatio + paperShiftY;
-			} else {
-				mousePosX = event.offsetX * paperResizeRatio + paperShiftX;
-				mousePosY = event.offsetY * paperResizeRatio + paperShiftY;
-			}
-			var currentHoveredShapeColored = false;
-			var previousHoveredShapeUnColored = false;
-			var sameShape = false;
-			if(buildingToFloorMap.get(currentBuilding) != null && buildingToFloorMap.get(currentBuilding).get(currentFloor) != null
-					&& buildingToFloorMap.get(currentBuilding).get(currentFloor).get("shapes") != null) {
-				buildingToFloorMap.get(currentBuilding).get(currentFloor).get("shapes").forEach(function(shape){
-					if(shape.data(GlobalStrings.ID) != "outline" && shape.isPointInside(mousePosX, mousePosY)){
-						if(currentHoveredShape == shape) {
-							sameShape = true;
-						} else {
-							shape.attr({fill:"red"});
-							currentHoveredShapeColored = true;
-							currentHoveredShape = shape;
-						}
+			if(!mouseDown) {
+				if(!$("#dialog_modal").is(":visible")) {
+					var mousePosX;
+					var mousePosY;
+					if(event.target.nodeName == "tspan" || event.offsetX === undefined) {
+						mousePosX = event.pageX * paperResizeRatio + paperShiftX;
+						mousePosY = (event.pageY - ($(document).height() - $("#raphael").height()))*paperResizeRatio + paperShiftY;
 					} else {
-						if(shape.attr("fill") == "red") {
-							shape.attr({fill:"white"});
-							previousHoveredShapeUnColored = true;
-							if(currentHoveredShape == shape) {
-								// Reset the currentHoveredShape because it isn't this one
-								currentHoveredShape = null;
+						mousePosX = event.offsetX * paperResizeRatio + paperShiftX;
+						mousePosY = event.offsetY * paperResizeRatio + paperShiftY;
+					}
+					var currentHoveredShapeColored = false;
+					var previousHoveredShapeUnColored = false;
+					var sameShape = false;
+					var currBldg = buildingToFloorMap.get(currentBuilding);
+					if(currBldg != null) {
+						var currFlr = currBldg.get(currentFloor);
+						if(currFlr != null) {
+							var shapes = currFlr.get("shapes");
+							if(shapes != null) {
+								shapes.forEach(function(shape){
+									if(shape.data(GlobalStrings.ID) != "outline" && shape.isPointInside(mousePosX, mousePosY)){
+										if(currentHoveredShape == shape) {
+											sameShape = true;
+										} else {
+											shape.attr({fill:"red"});
+											currentHoveredShapeColored = true;
+											currentHoveredShape = shape;
+											var name = shapeToNameMap.get(shape);
+											if(name != null) {
+												name.attr({"font-size": 14});
+											}
+										}
+									} else {
+										if(shape.attr("fill") == "red") {
+											shape.attr({fill:"#fddcac"});
+											var name = shapeToNameMap.get(shape);
+											if(name != null) {
+												name.attr({"font-size": 10});
+											}
+											previousHoveredShapeUnColored = true;
+											if(currentHoveredShape == shape) {
+												// Reset the currentHoveredShape because it isn't this one
+												currentHoveredShape = null;
+											}
+										}
+									}
+									if((currentHoveredShapeColored && previousHoveredShapeUnColored) || sameShape) {
+										return false;
+									}
+								});
 							}
 						}
 					}
-					if((currentHoveredShapeColored && previousHoveredShapeUnColored) || sameShape) {
-						return false;
-					}
-				});
+				}
 			}
-		}
-	});
+		});
+	}, 50);
 });
 
 $(document).bind("click", function(ev) {
@@ -120,11 +141,11 @@ function importNameChangeMap() {
 }
 
 function handleClick(ev, secondTry) {
-	if(!renameDialogOpen) {
-		var clickX = ev.offsetX*paperResizeRatio;
-		var clickY = ev.offsetY*paperResizeRatio;
+	if(!$("#dialog_modal").is(":visible")) {
+		var clickX = ev.offsetX * paperResizeRatio;
+		var clickY = ev.offsetY * paperResizeRatio;
 
-		if (ev.target.getAttribute("customNodeName") == "tspan") {
+		if (ev.target.getAttribute("customNodeName") == "tspan" || ev.offsetX === undefined) {
 			clickX = ev.pageX*paperResizeRatio;
 			clickY = (ev.pageY - ($(document).height() - $("#raphael").height()))*paperResizeRatio;
 		}
@@ -208,7 +229,6 @@ function alertDialog(alertText) {
 }
 
 function renameDialog(element) {
-	renameDialogOpen = true;
 	var buildingFloorContent = "<form id='change_building_floor_form' onchange='renameDialogChanged()'>" +
 		"<div class='form-group'><label for='formatted_id'>Formatted ID</label><div id='formatted_id'>" + element.data(GlobalStrings.ID) + "</div></div>" +
 		"<div class='form-group'>" +
@@ -255,7 +275,7 @@ function renameDialog(element) {
 	$("#dialog_modal .modal-title").text("Renaming Area");
 	$("#dialog_modal .modal-body").html(buildingFloorContent);
 	$("#dialog_modal .modal-footer").html("<button type='button' class='btn btn-default' data-dismiss='modal' onclick=\"rename('" + element.data(GlobalStrings.ID) + "')\">Save</button>" +
-		"<button type='button' class='btn btn-default' data-dismiss='modal' onclick=\"renameDialogClosed()\">Cancel</button>");
+		"<button type='button' class='btn btn-default' data-dismiss='modal'>Cancel</button>");
 	$('#dialog_modal').modal('toggle');
 }
 
@@ -286,12 +306,7 @@ function renameDialogChanged() {
 	$("#formatted_id").html(formattedId);
 }
 
-function renameDialogClosed() {
-	renameDialogOpen = false;
-}
-
 function rename(oldId) {
-	renameDialogOpen = false;
 	var selectedBuilding = $("#building_selector").val();
 	var selectedFloor = $("#floor_selector").val();
 	var changedId = $("#formatted_id").text();
@@ -372,14 +387,18 @@ function renameShapesForBuildingAndFloor(building, floor) {
 				if(changedId == "not_important") {
 					element.remove();
 				} else {
-					element.attr("text", changedId);
+					element.attr("text", findTypeSpecificId(changedId));
 				}
 			}
 		});
 		shapeListAndNameMap.get("shapes").forEach(function(element) {
 			var changedId = floorChangeMap.get(element.data(GlobalStrings.ID));
 			if(changedId != null) {
+				var name = shapeToNameMap.remove(element);
 				element.data(GlobalStrings.ID, changedId);
+				if(changedId != "" && name != null) {
+					shapeToNameMap.set(element, name);
+				}
 			}
 		});
 	}
@@ -388,65 +407,47 @@ function renameShapesForBuildingAndFloor(building, floor) {
 
 function saveDictionaryFile() {
 	var changeMap = {buildings:[]};
-	var changeMapString = "{buildings:[";
-	var firstName = true;
 	var buildingCount = -1;
 	nameChangeMap.forEach(function(building, buildingChangeMap){
 		buildingCount++;
 		changeMap.buildings[buildingCount] = {id:"",floors:[]};
-		if(!firstName) {
-			changeMapString += ",";
-		} else {
-			firstName = false;
-		}
-		changeMapString += "{id:\"" + building + "\",floors:[";
-		var firstBuilding = true;
+		var changeMapBuilding = changeMap.buildings[buildingCount];
+		changeMapBuilding.id = building;
 		var floorCount = -1;
 		buildingChangeMap.forEach(function(floor, floorChangeMap){
 			floorCount++;
-			changeMap.buildings[buildingCount].floors[floorCount] = {id:"",changes:[]};
-			if(!firstBuilding) {
-				changeMapString += ",";
-			} else {
-				firstBuilding = false;
-			}
-			changeMapString += "{id:\"" + floor + "\",changes:[";
-			var firstFloor = true;
+			changeMapBuilding.floors[floorCount] = {id:"",changes:[]};
+			var changeMapFloor = changeMapBuilding.floors[floorCount];
+			changeMapFloor.id = floor;
 			var changeCount = -1;
 			floorChangeMap.forEach(function(oldId, changedId){
 				changeCount++;
 				changeMap.buildings[buildingCount].floors[floorCount].changes[changeCount] = {oldId:"",changedId:""};
-				changeMap.buildings[buildingCount].floors[floorCount].changes[changeCount].oldId = oldId;
-				changeMap.buildings[buildingCount].floors[floorCount].changes[changeCount].changedId = changedId;
-				if(!firstFloor) {
-					changeMapString += ",";
-				} else {
-					firstFloor = false;
-				}
-				changeMapString += "{oldId:\"" + oldId + "\",changedId:\"" + changedId + "\"}";
+				var changeMapChange = changeMap.buildings[buildingCount].floors[floorCount].changes[changeCount];
+				changeMapChange.oldId = oldId;
+				changeMapChange.changedId = changedId;
 			});
-			changeMapString += "]}";
 		});
-		changeMapString += "]}";
 	});
-	changeMapString += "]}";
 	
-	console.log(JSON.stringify(changeMap));
+	console.log(JSON.stringify(dictionary));
 
-	var request = $.ajax({
-	 	url: "dictionaryUpload",
-	 	type: "POST",
-	 	data: {
-	 		dictionary: $.param(dictionary),
-	 		nameChangeMap: $.param(changeMap),
-	 		sessionTime: sessionTime
-	 	},
-	 	dataType: "html"
-	 });
-	
-	 request.fail(function(jqXHR, textStatus) {
-	 	alert("Request failed: " + textStatus);
-	 });
+//	var request = $.ajax({
+//	 	url: "dictionaryUpload",
+//	 	type: "POST",
+//	 	data: {
+//	 		dictionary: $.param(dictionary),
+//	 		nameChangeMap: $.param(changeMap),
+//	 		sessionTime: sessionTime
+//	 	},
+//	 	dataType: "html"
+//	 });
+//	
+//	 request.fail(function(jqXHR, textStatus) {
+//	 	alert("Request failed: " + textStatus);
+//	 	console.log(JSON.stringify(dictionary));
+//	 	console.log(JSON.stringify(changeMap));
+//	 });
 }
 
 function changeBuildingFloor() {
