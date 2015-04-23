@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>RDP Plotter</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+		<script src="js/raphael.js" type="text/javascript"></script>
+		<script src="js/scale.raphael.js" type="text/javascript"></script>
+		<script src="js/dijkstras.js" type="text/javascript"></script>
+		<script src="js/buckets.js" type="text/javascript"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js" type="text/javascript"></script>
+		<script src="dictionary/dictionary.js"></script>
+		<script src="js/GlobalStrings.js" type="text/javascript"></script>
+		<script src="js/logging.js" type="text/javascript"></script>
+		<script src="js/umapsd-essentials.js" type="text/javascript"></script>
+		<script src="js/rdp.js" type="text/javascript"></script>
+		<script src="js/umapsd-conversions.js" type="text/javascript"></script>
+		<script src="js/pathfinding.js" type="text/javascript"></script>
+		<script src="graph/graph.js" type="text/javascript"></script>
+		<script src="js/raphael-svg-import.js" type="text/javascript"></script>
+		<script src="js/raphael.export.js" type="text/javascript"></script>
+		<script src="https://code.jquery.com/ui/1.11.3/jquery-ui.min.js" type="text/javascript"></script>
+		
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+		<link rel="stylesheet" href="css/style.css">
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+	</head>
+	<body id="body">
+		<nav id="navbar" class="navbar navbar-default">
+		  <div class="container-fluid">
+		    <!-- Brand and toggle get grouped for better mobile display -->
+		    <div class="navbar-header">
+		      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+		        <span class="sr-only">Toggle navigation</span>
+		        <span class="icon-bar"></span>
+		        <span class="icon-bar"></span>
+		        <span class="icon-bar"></span>
+		      </button>
+		      <a class="navbar-brand" href="#">UMapsD</a>
+		    </div>
+
+		    <!-- Collect the nav links, forms, and other content for toggling -->
+		    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+		      <ul id="navbar" class="nav navbar-nav">
+				<li>
+					<a id="change_building_floor_popover" tabindex="0" class="btn" href="#" title="Change Building/Floor" onclick="changeBuildingFloor()">
+						Change Building/Floor
+						<span class="caret"></span>
+					</a>
+				</li>
+		        <li>
+					<a id="plot_markers_popover" tabindex="0" class="btn" href="#" title="Format Marker" onclick="formatMarker()">
+					Plot Markers
+					<span class="caret"></span>
+					</a>
+				</li>
+				<li class="dropdown">
+					<a id="marker_opts_dropdown" href="#" class="btn" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+						Marker Opts
+						<span class="caret"></span>
+					</a>
+					<ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
+						<li>
+							<a id="auto_connect_button" class="btn" role="button" onclick="autoConnect()">
+								Auto Connect
+							</a>
+						</li>
+						<li>
+							<a id="manual_connect_button" class="btn" role="button" onclick="manualConnect()">
+								Manual Connect
+							</a>
+						</li>
+						<li>
+							<a id="move_all_markers_button" class="btn" role="button" onclick="moveAllMarkers()">
+								Move All Markers
+							</a>
+						</li>
+					</ul>
+				</li>
+				
+				<li>
+					<a id="cancel_manual_connect_button" class="btn" role="button" onclick="manualConnect()" style="display: none;">
+						Cancel Manual Connect
+					</a>
+				</li>
+				<li>
+					<a id="finished_moving_markers_button" class="btn" role="button" onclick="moveAllMarkers()" style="display: none;">
+						Finished Moving Markers
+					</a>
+				</li>
+				
+				<li>
+					<a id="connect_floors_button" class="btn" role="button" onclick="connectFloors()">
+						Connect Floors
+					</a>
+				</li>
+				
+				<li>
+					<a id="remove_button" class="btn" role="button" onclick="removeMode()">
+						Remove Mode
+					</a>
+				</li>
+				<!-- <li>
+					<a id="undo_button" class="btn" role="button" onclick="undo()">
+						Undo
+					</a>
+				</li>
+				<li>
+					<a id="redo_button" class="btn" role="button" onclick="redo()">
+						Redo
+					</a>
+				</li> -->
+				<li>
+					<a id="generate_button" class="btn" role="button" onclick="generateGraph()">
+						Save Graph
+					</a>
+				</li>
+
+				<li class="dropdown">
+					<a id="testing_dropdown" href="#" class="btn" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+						Testing
+						<span class="caret"></span>
+					</a>
+					<ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
+						<li>
+							<a id="test_find_path_button" class="btn" role="button" onclick="testFindPath()">
+								Test Pathfinding
+							</a>
+						</li>
+						<li>
+							<a id="test_bad_path_button" class="btn" role="button" onclick="testForBadPaths()">
+								Test For Bad Paths
+							</a>
+						</li>
+					</ul>
+				</li>
+				<li>
+					<a id="stop_pathfinding_button" class="btn" role="button" onclick="testFindPath()" style="display: none;">
+						Stop Pathfinding
+					</a>
+				</li>
+				<li>
+					<a id="exit_testing_button" class="btn" role="button" onclick="testForBadPaths()" style="display: none;">
+						Exit Testing
+					</a>
+				</li>
+				<li>
+					<a id="rename_tool_button" href="rename" class="btn" role="button">
+						Rename Tool
+					</a>
+				</li>
+				<li>
+					<a id="main_app_button" href="main" class="btn" role="button">
+						Main App
+					</a>
+				</li>
+		      </ul>
+		    </div><!-- /.navbar-collapse -->
+		  </div><!-- /.container-fluid -->
+		</nav>
+		
+		<div id="view">
+			<div id="options">
+				<div id="tool_tip"></div>
+			</div>
+			<div id="raphael" class="col-xs-12 col-sm-12 col-md-12"></div>
+			
+			<div id="dialog_modal" class="modal fade">
+			  <div class="modal-dialog">
+			    <div class="modal-content">
+			      <div class="modal-header">
+			        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+			        <h2 class="modal-title text-center"></h2>
+			      </div>
+			      <div class="modal-body text-center">
+			      </div>
+			      <div class="modal-footer">
+			      </div>
+			    </div><!-- /.modal-content -->
+			  </div><!-- /.modal-dialog -->
+			</div><!-- /.modal -->
+		</div>
+	</body>
+</html>
