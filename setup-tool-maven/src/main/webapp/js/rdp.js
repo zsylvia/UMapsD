@@ -26,6 +26,8 @@ var BATHROOM_MENS_TOOL_TIP_TEXT = "<b>Currently Plotting Bathrooms (Men's)</b><b
 	"Click inside an area to plot a marker for a men's bathroom.";
 var BATHROOM_WOMENS_TOOL_TIP_TEXT = "<b>Currently Plotting Bathrooms (Women's)</b><br>" +
 	"Click inside an area to plot a marker for a women's bathroom.";
+var PARKING_LOT_TOOL_TIP_TEXT = "<b>Currently Plotting Parking Lots</b><br>" +
+	"Click a location where a parking lot is located to plot a marker for it.";
 var MANUALLY_CONNECTING_MARKER_FROM = "Click on a marker to start a connection from. Or select \"Cancel Manual Connect\" to exit manual connecting mode";
 var MANUALLY_CONNECTING_MARKER_TO = "Click on another marker to make a connection. Or select \"Cancel Manual Connect\" to exit manual connecting mode";
 var REMOVE_MODE_TIP_TEXT = "You are in \"remove mode\". Click any marker or path to remove it.";
@@ -39,57 +41,10 @@ var plottingStair = 4;
 var plottingElevator = 5;
 var plottingBathroomMens = 6;
 var plottingBathroomWomens = 7;
-
-var markerTypeToColorMap = new buckets.Dictionary();
-markerTypeToColorMap.set(GlobalStrings.ROOM, GlobalStrings.COLOR.RED);
-markerTypeToColorMap.set(GlobalStrings.DOOR, GlobalStrings.COLOR.BLUE);
-markerTypeToColorMap.set(GlobalStrings.HALLWAY, GlobalStrings.COLOR.ORANGE);
-markerTypeToColorMap.set(GlobalStrings.PATHWAY, GlobalStrings.COLOR.GREEN);
-markerTypeToColorMap.set(GlobalStrings.STAIR, GlobalStrings.COLOR.PURPLE);
-markerTypeToColorMap.set(GlobalStrings.ELEVATOR, GlobalStrings.COLOR.YELLOW);
-markerTypeToColorMap.set(GlobalStrings.BATHROOM_MENS, GlobalStrings.COLOR.CYAN);
-markerTypeToColorMap.set(GlobalStrings.BATHROOM_WOMENS, GlobalStrings.COLOR.PINK);
+var plottingParkingLot = 8;
 
 var markerSize = 5;
 var pathStrokeWidth = 4;
-
-var typeToMarkerMap = new buckets.Dictionary();
-typeToMarkerMap.set(GlobalStrings.ROOM, roomMap);
-typeToMarkerMap.set(GlobalStrings.DOOR, doorMap);
-typeToMarkerMap.set(GlobalStrings.HALLWAY, hallwayMap);
-typeToMarkerMap.set(GlobalStrings.PATHWAY, pathwayMap);
-typeToMarkerMap.set(GlobalStrings.STAIR, stairMap);
-typeToMarkerMap.set(GlobalStrings.ELEVATOR, elevatorMap);
-typeToMarkerMap.set(GlobalStrings.BATHROOM_MENS, bathroomMensMap);
-typeToMarkerMap.set(GlobalStrings.BATHROOM_WOMENS, bathroomWomensMap);
-
-var roomConnectionMap = newConnectionMap();
-var doorConnectionMap = newConnectionMap();
-var hallwayConnectionMap = newConnectionMap();
-var pathwayConnectionMap = newConnectionMap();
-var stairConnectionMap = newConnectionMap();
-var elevatorConnectionMap = newConnectionMap();
-var bathroomMensConnectionMap = newConnectionMap();
-var bathroomWomensConnectionMap = newConnectionMap();
-
-var typeToConnectionMap = new buckets.Dictionary();
-typeToConnectionMap.set(GlobalStrings.ROOM, roomConnectionMap);
-typeToConnectionMap.set(GlobalStrings.DOOR, doorConnectionMap);
-typeToConnectionMap.set(GlobalStrings.HALLWAY, hallwayConnectionMap);
-typeToConnectionMap.set(GlobalStrings.PATHWAY, pathwayConnectionMap);
-typeToConnectionMap.set(GlobalStrings.STAIR, stairConnectionMap);
-typeToConnectionMap.set(GlobalStrings.ELEVATOR, elevatorConnectionMap);
-typeToConnectionMap.set(GlobalStrings.BATHROOM_MENS, bathroomMensConnectionMap);
-typeToConnectionMap.set(GlobalStrings.BATHROOM_WOMENS, bathroomWomensConnectionMap);
-
-// These counts are just used when naming, the number does not matter it only removes duplicates
-var doorIdCount = 0;
-var hallwayIdCount = 0;
-var pathwayIdCount = 0;
-var stairIdCount = 0;
-var elevatorIdCount = 0;
-var bathroomMensIdCount = 0;
-var bathroomWomensIdCount = 0;
 
 var manuallyConnectingMode = false;
 var manuallyConnectingMarker = false;
@@ -107,7 +62,6 @@ var showingPath = false;
 var testingForBadPaths = false;
 
 var draggingMarkerIgnoreClick = false;
-var mouseOnMarker = false;
 
 var graph;
 
@@ -115,20 +69,15 @@ var markerFormShowing = false;
 var selectedMarkerType = GlobalStrings.ROOM;
 var changeBuildingFloorShowing = false;
 
-var sessionTime = new Date().getTime();
+var sessionTime = now();
 
 var movingAllMarkers = false;
 
+var connectingFloors = false;
+
+var disposableMarkerText = new buckets.Dictionary();
+
 var LOG = new Logger(LoggingLevel.ALL);
-
-function Connection(marker, distance) {
-	this.marker = marker;
-	this.distance = distance;
-
-	this.toString = function() {
-		return marker1.data(GlobalStrings.ID) + "-" + distance;
-	}
-}
 
 function Path(element, marker1Data, marker2Data, distance) {
 	this.element = element;
@@ -355,32 +304,22 @@ function Command() {
 }
 
 $(document).ready(function() {
-	setMarkersInvisible(false);
-	setFloorSelectorForBuilding(currentBuilding, currentFloor);
-	
-	//Initally show room tool tip
-	roomSelected();
+	setTimeout(function(){
+		setMarkersInvisible(false);
+		setFloorSelectorForBuilding(currentBuilding, currentFloor);
+		
+		//Initally show room tool tip
+		roomSelected();
 
-	$("#plot_markers_popover").popover({
-		placement: "bottom",
-		html: true
-	});
-	$("#change_building_floor_popover").popover({
-		placement: "bottom",
-		html: true
-	});
-
-	$("#graph_input").change(function(event) {
-		var file = event.target.files[0];
-
-		var reader = new FileReader();
-
-		reader.onload = function(readFile) {
-			loadGraphData(readFile.target.result);
-		}
-
-		reader.readAsText(file);
-	});
+		$("#plot_markers_popover").popover({
+			placement: "bottom",
+			html: true
+		});
+		$("#change_building_floor_popover").popover({
+			placement: "bottom",
+			html: true
+		});
+	}, 50);
 });
 
 function setMarkerDragEventHandlers(marker) {
@@ -427,6 +366,13 @@ function markerDragEventMove(marker, dx, dy, x, y, event) {
 		cx: (marker.data("drag_start_cx") + dx),
 		cy: (marker.data("drag_start_cy") + dy)
 	});
+	var markerText = disposableMarkerText.get(marker.data(GlobalStrings.ID));
+	if(markerText != null) {
+		markerText.attr({
+			x: marker.attr("cx"),
+			y: marker.attr("cy")
+		});
+	}
 
 	var markerConnectionSet = typeToConnectionMap.get(marker.data(GlobalStrings.TYPE)).get(marker);
 	if (markerConnectionSet != null) {
@@ -527,15 +473,19 @@ function handleClick(ev, secondTry) {
 			if (!pathClicked) {
 				var clickedElement = null;
 
-				if (currentlyPlotting == plottingRoom || currentlyPlotting == plottingBathroomMens || currentlyPlotting == plottingBathroomWomens) {
-					paper.forEach(function(element) {
-						if (element.isPointInside(clickX, clickY)) {
-							// TODO: Find better solution then explicitly writing outline
-							if (element.type != "text" && element.data(GlobalStrings.ID) != "outline") {
-								clickedElement = element;
-								return false;
-							}
-						}
+				if (currentlyPlotting == plottingRoom || currentlyPlotting == plottingBathroomMens || currentlyPlotting == plottingBathroomWomens
+						|| currentlyPlotting == plottingParkingLot) {
+					buildingToFloorMap.forEach(function(building, floorToShapeListAndNameMap) {
+						floorToShapeListAndNameMap.forEach(function(floor, shapeListAndNameMap) {
+							shapeListAndNameMap.get("shapes").forEach(function(shape) {
+								if (shape.isPointInside(clickX, clickY)) {
+									if (shape.type != "text" && shape.data(GlobalStrings.ID) != "outline") {
+										clickedElement = shape;
+										return false;
+									}
+								}
+							});
+						});
 					});
 				}
 				
@@ -566,16 +516,10 @@ function handleClick(ev, secondTry) {
 		});
 		handleMarkerClick(marker);
 	} else if (ev.target.getAttribute("customNodeName") == "path") {
-		var pathElement;
 		var pathObject;
-		paper.forEach(function(element) {
-			if (element.isPointInside(clickX, clickY) && element.type == "path") {
-				pathElement = element;
-				return false;
-			}
-		});
+		
 		pathMap.forEach(function(pathString, path) {
-			if (path.element == pathElement) {
+			if (path.element.isPointInside(clickX, clickY)) {
 				pathObject = path;
 				return false;
 			}
@@ -663,15 +607,6 @@ function removeMarkerWithId(id) {
 	removeMarker(marker);
 }
 
-function getMarkerColorFromType(type) {
-	var color = markerTypeToColorMap.get(type);
-
-	if (color == null) {
-		color = "black";
-	}
-	return color;
-}
-
 function getMarkerData(marker) {
 	var markerData;
 	if (marker.data(GlobalStrings.TYPE) == GlobalStrings.PATHWAY) {
@@ -689,14 +624,6 @@ function getTotalNumberOfMarkers() {
 		totalMarkers += markerMap.size();
 	});
 	return totalMarkers;
-}
-
-function getConnectionMapForType(type) {
-	return typeToConnectionMap.get(type);
-}
-
-function getMarkerMapForType(type) {
-	return typeToMarkerMap.get(type);
 }
 
 function cancelManualConnect(cancelManuallyConnectingMode) {
@@ -781,6 +708,12 @@ function plotMarker(x, y, element) {
 			case plottingBathroomWomens:
 				marker = plotBathroomWomens(x, y, currentBuilding, currentFloor, element.data(GlobalStrings.ID));
 				break;
+			case plottingParkingLot:
+				if (element != null) {
+					marker = plotParkingLot(x, y, element.data(GlobalStrings.ID));
+				} else {
+					alertDialog("Cannot plot marker for parking lot. The selected point is not inside an area");
+				}
 		}
 
 		if (marker != null) {
@@ -823,7 +756,7 @@ function plotRoom(x, y, building, floor, elementId) {
 		marker.data(GlobalStrings.FLOOR, floor);
 		marker.data(GlobalStrings.TYPE, GlobalStrings.ROOM);
 
-		roomMap.set(marker.data(GlobalStrings.ID), marker);
+		typeToMarkerMap.get(GlobalStrings.ROOM).set(marker.data(GlobalStrings.ID), marker);
 	}
 
 	// Need to explicitly add to undo stack here because we said not to above
@@ -842,7 +775,7 @@ function plotDoor(x, y, building, floor) {
 	marker.data(GlobalStrings.BUILDING, building);
 	marker.data(GlobalStrings.FLOOR, floor);
 	marker.data(GlobalStrings.TYPE, GlobalStrings.DOOR);
-	doorMap.set(marker.data(GlobalStrings.ID), marker);
+	typeToMarkerMap.get(GlobalStrings.DOOR).set(marker.data(GlobalStrings.ID), marker);
 
 	return marker;
 }
@@ -855,7 +788,7 @@ function plotHallway(x, y, building, floor) {
 	marker.data(GlobalStrings.BUILDING, building);
 	marker.data(GlobalStrings.FLOOR, floor);
 	marker.data(GlobalStrings.TYPE, GlobalStrings.HALLWAY);
-	hallwayMap.set(marker.data(GlobalStrings.ID), marker);
+	typeToMarkerMap.get(GlobalStrings.HALLWAY).set(marker.data(GlobalStrings.ID), marker);
 
 	return marker;
 }
@@ -866,7 +799,7 @@ function plotPathway(x, y) {
 	marker = addMarker(x, y, markerTypeToColorMap.get(GlobalStrings.PATHWAY));
 	marker.data(GlobalStrings.ID, id);
 	marker.data(GlobalStrings.TYPE, GlobalStrings.PATHWAY);
-	pathwayMap.set(marker.data(GlobalStrings.ID), marker);
+	typeToMarkerMap.get(GlobalStrings.PATHWAY).set(marker.data(GlobalStrings.ID), marker);
 
 	return marker;
 }
@@ -879,7 +812,7 @@ function plotStair(x, y, building, floor) {
 	marker.data(GlobalStrings.BUILDING, building);
 	marker.data(GlobalStrings.FLOOR, floor);
 	marker.data(GlobalStrings.TYPE, GlobalStrings.STAIR);
-	stairMap.set(marker.data(GlobalStrings.ID), marker);
+	typeToMarkerMap.get(GlobalStrings.STAIR).set(marker.data(GlobalStrings.ID), marker);
 
 	return marker;
 }
@@ -892,7 +825,7 @@ function plotElevator(x, y, building, floor) {
 	marker.data(GlobalStrings.BUILDING, building);
 	marker.data(GlobalStrings.FLOOR, floor);
 	marker.data(GlobalStrings.TYPE, GlobalStrings.ELEVATOR);
-	elevatorMap.set(marker.data(GlobalStrings.ID), marker);
+	typeToMarkerMap.get(GlobalStrings.ELEVATOR).set(marker.data(GlobalStrings.ID), marker);
 
 	return marker;
 }
@@ -910,7 +843,7 @@ function plotBathroomMens(x, y, building, floor, elementId) {
 	marker.data(GlobalStrings.BUILDING, building);
 	marker.data(GlobalStrings.FLOOR, floor);
 	marker.data(GlobalStrings.TYPE, GlobalStrings.BATHROOM_MENS);
-	bathroomMensMap.set(marker.data(GlobalStrings.ID), marker);
+	typeToMarkerMap.get(GlobalStrings.BATHROOM_MENS).set(marker.data(GlobalStrings.ID), marker);
 
 	return marker;
 }
@@ -928,13 +861,29 @@ function plotBathroomWomens(x, y, building, floor, elementId) {
 	marker.data(GlobalStrings.BUILDING, building);
 	marker.data(GlobalStrings.FLOOR, floor);
 	marker.data(GlobalStrings.TYPE, GlobalStrings.BATHROOM_WOMENS);
-	bathroomWomensMap.set(marker.data(GlobalStrings.ID), marker);
+	typeToMarkerMap.get(GlobalStrings.BATHROOM_WOMENS).set(marker.data(GlobalStrings.ID), marker);
+
+	return marker;
+}
+
+function plotParkingLot(x, y, elementId) {
+	var id;
+	if (idIsValid(elementId)) {
+		id = elementId;
+	} else {
+		id = GlobalStrings.PARKING_LOT_ID + "_" + elementId;
+	}
+	LOG.info("Plotting new parking lot " + id + " at (" + x + "," + y + ")");
+	marker = addMarker(x, y, markerTypeToColorMap.get(GlobalStrings.PARKING_LOT));
+	marker.data(GlobalStrings.ID, id);
+	marker.data(GlobalStrings.TYPE, GlobalStrings.PARKING_LOT);
+	typeToMarkerMap.get(GlobalStrings.PARKING_LOT).set(marker.data(GlobalStrings.ID), marker);
 
 	return marker;
 }
 
 function addMarker(x, y, color) {
-	var marker = paper.circle(x, y, markerSize/paperResizeRatio).attr({
+	var marker = paper.circle(x, y, markerSize).attr({
 		fill: color
 	});
 
@@ -945,19 +894,6 @@ function addMarker(x, y, color) {
 	}
 
 	return marker;
-}
-
-function getMarkerFromId(id) {
-	var returnMarker = null;
-
-	allMarkers.forEach(function(markerMap) {
-		returnMarker = markerMap.get(id);
-		if (returnMarker != null) {
-			return false;
-		}
-	});
-
-	return returnMarker;
 }
 
 function autoConnect() {
@@ -1143,146 +1079,6 @@ function autoConnect() {
 	}
 }
 
-function getClosestRoom(marker) {
-	var closestRoom = null;
-	var closestDistance = 9999999;
-
-	roomMap.forEach(function(roomId, room) {
-		if (room.isVisible() && marker != room && inSameBuilding(marker, room) && onSameFloor(marker, room)) {
-			var distance = getDistance(marker, room);
-			if (distance < closestDistance) {
-				closestRoom = room;
-				closestDistance = distance;
-			}
-		}
-	});
-
-	if (closestRoom != null) {
-		LOG.debug("Closest room marker to " + marker.data(GlobalStrings.ID) + " is " + closestRoom.data(GlobalStrings.ID));
-	} else {
-		LOG.debug("Closest room marker to " + marker.data(GlobalStrings.ID) + " is null");
-	}
-
-	return closestRoom;
-}
-
-function getClosestBathroomMens(marker) {
-	var closestBathroom = null;
-	var closestDistance = 9999999;
-	bathroomMensMap.forEach(function(bathroomId, bathroom) {
-		if (bathroom.isVisible() && marker != bathroom && inSameBuilding(marker, bathroom) && onSameFloor(marker, bathroom)) {
-			var distance = getDistance(marker, bathroom);
-			if (distance < closestDistance) {
-				closestBathroom = bathroom;
-				closestDistance = distance;
-			}
-		}
-	});
-
-	if (closestBathroom != null) {
-		LOG.debug("Closest men's bathroom marker to " + marker.data(GlobalStrings.ID) + " is " + closestBathroom.data(GlobalStrings.ID));
-	} else {
-		LOG.debug("Closest men's bathroom marker to " + marker.data(GlobalStrings.ID) + " is null");
-	}
-
-	return closestBathroom;
-}
-
-function getClosestBathroomWomens(marker) {
-	var closestBathroom = null;
-	var closestDistance = 9999999;
-	bathroomWomensMap.forEach(function(bathroomId, bathroom) {
-		if (bathroom.isVisible() && marker != bathroom && inSameBuilding(marker, bathroom) && onSameFloor(marker, bathroom)) {
-			var distance = getDistance(marker, bathroom);
-			if (distance < closestDistance) {
-				closestBathroom = bathroom;
-				closestDistance = distance;
-			}
-		}
-	});
-
-	if (closestBathroom != null) {
-		LOG.debug("Closest women's bathroom marker to " + marker.data(GlobalStrings.ID) + " is " + closestBathroom.data(GlobalStrings.ID));
-	} else {
-		LOG.debug("Closest women's bathroom marker to " + marker.data(GlobalStrings.ID) + " is null");
-	}
-
-	return closestBathroom;
-}
-
-function getClosestHallway(marker) {
-	var closestHallway = null;
-	var closestDistance = 9999999;
-	hallwayMap.forEach(function(hallwayId, hallway) {
-		if (hallway.isVisible() && marker != hallway && inSameBuilding(marker, hallway) && onSameFloor(marker, hallway)) {
-			var distance = getDistance(marker, hallway);
-			if (distance < closestDistance) {
-				closestHallway = hallway;
-				closestDistance = distance;
-			}
-		}
-	});
-
-	if (closestHallway != null) {
-		LOG.debug("Closest hallway marker to " + marker.data(GlobalStrings.ID) + " is " + closestHallway.data(GlobalStrings.ID));
-	} else {
-		LOG.debug("Closest hallway marker to " + marker.data(GlobalStrings.ID) + " is null");
-	}
-
-	return closestHallway;
-}
-
-function getClosestDoor(marker, sameBuilding, sameFloor) {
-	var closestDoor = null;
-	var closestDistance = 9999999;
-	doorMap.forEach(function(doorId, door) {
-		var valid = true;
-		if (sameBuilding && !inSameBuilding(marker, door)) {
-			valid = false;
-		}
-		if (sameFloor && !onSameFloor(marker, door)) {
-			valid = false;
-		}
-		if (door.isVisible() && marker != door && valid) {
-			var distance = getDistance(marker, door);
-			if (distance < closestDistance) {
-				closestDoor = door;
-				closestDistance = distance;
-			}
-		}
-	});
-
-	if (closestDoor != null) {
-		LOG.debug("Closest door marker to " + marker.data(GlobalStrings.ID) + " is " + closestDoor.data(GlobalStrings.ID));
-	} else {
-		LOG.debug("Closest door marker to " + marker.data(GlobalStrings.ID) + " is null");
-	}
-
-	return closestDoor;
-}
-
-function getClosestPathway(marker) {
-	var closestPathway = null;
-	var closestDistance = 9999999;
-	pathwayMap.forEach(function(pathwayId, pathway) {
-		if (marker != pathway) {
-			var distance = getDistance(marker, pathway);
-			if (distance < closestDistance) {
-				closestPathway = pathway;
-				closestDistance = distance;
-			}
-		}
-	});
-
-	if (closestPathway != null) {
-		LOG.debug("Closest door marker to " + marker.data(GlobalStrings.ID) + " is " + closestPathway.data(GlobalStrings.ID));
-	} else {
-		LOG.debug("Closest door marker to " + marker.data(GlobalStrings.ID) + " is null");
-	}
-
-	return closestPathway;
-}
-
 function inSameBuilding(marker1, marker2) {
 	return marker1.data(GlobalStrings.BUILDING) == marker2.data(GlobalStrings.BUILDING);
 }
@@ -1368,129 +1164,8 @@ function newMarkerSet() {
 	});
 }
 
-function newConnectionSet() {
-	return new buckets.Set(function connectionToString(connection) {
-		return connection.marker.data(GlobalStrings.ID);
-	});
-}
-
-function newConnectionMap() {
-	return new buckets.Dictionary(function markerToString(marker) {
-		return marker.data(GlobalStrings.ID);
-	});
-}
-
 function markerIdNull(marker) {
 	return marker.data(GlobalStrings.ID) == null;
-}
-
-function getRoomFromRoomId(roomId) {
-	return roomId.substr(roomId.lastIndexOf(GlobalStrings.ROOM_ID + "_") + 3);
-}
-
-function formatRoomId(building, floor, room) {
-	return GlobalStrings.BUILDING_ID + "_" + building + "_" + GlobalStrings.FLOOR_ID + "_" + floor + "_" + GlobalStrings.ROOM_ID + "_" + room;
-}
-
-function formatDoorId(building, floor) {
-	var id = null;
-	while (id == null) {
-		doorIdCount++;
-		var tmpId = GlobalStrings.BUILDING_ID + "_" + building + "_" + GlobalStrings.FLOOR_ID + "_" + floor + "_" + GlobalStrings.DOOR_ID + "_" + doorIdCount;
-		if (!doorMap.containsKey(tmpId)) {
-			id = tmpId;
-		}
-	}
-	return id;
-}
-
-function formatHallwayId(building, floor) {
-	var id = null;
-	while (id == null) {
-		hallwayIdCount++;
-		var tmpId = GlobalStrings.BUILDING_ID + "_" + building + "_" + GlobalStrings.FLOOR_ID + "_" + floor + "_" + GlobalStrings.HALLWAY_ID + "_" + hallwayIdCount;
-		if (!hallwayMap.containsKey(tmpId)) {
-			id = tmpId;
-		}
-	}
-	return id;
-}
-
-function formatPathwayId() {
-	var id = null;
-	while (id == null) {
-		pathwayIdCount++;
-		var tmpId = GlobalStrings.PATHWAY_ID + "_" + pathwayIdCount;
-		if (!pathwayMap.containsKey(tmpId)) {
-			id = tmpId;
-		}
-	}
-	return id;
-}
-
-function formatStairId(building, floor) {
-	var id = null;
-	while (id == null) {
-		stairIdCount++;
-		var tmpId = GlobalStrings.BUILDING_ID + "_" + building + "_" + GlobalStrings.FLOOR_ID + "_" + floor + "_" + GlobalStrings.STAIR_ID + "_" + stairIdCount;
-		if (!stairMap.containsKey(tmpId)) {
-			id = tmpId;
-		}
-	}
-	return id;
-}
-
-function formatElevatorId(building, floor) {
-	var id = null;
-	while (id == null) {
-		elevatorIdCount++;
-		var tmpId = GlobalStrings.BUILDING_ID + "_" + building + "_" + GlobalStrings.FLOOR_ID + "_" + floor + "_" + GlobalStrings.ELEVATOR_ID + "_" + elevatorIdCount;
-		if (!elevatorMap.containsKey(tmpId)) {
-			id = tmpId;
-		}
-	}
-	return id;
-}
-
-function formatBathroomMensId(building, floor) {
-	var id = null;
-	while (id == null) {
-		bathroomMensIdCount++;
-		var tmpId = GlobalStrings.BUILDING_ID + "_" + building + "_" + GlobalStrings.FLOOR_ID + "_" + floor + "_" + GlobalStrings.BATHROOM_MENS_ID + "_" + bathroomMensIdCount;
-		if (!bathroomMensMap.containsKey(tmpId)) {
-			id = tmpId;
-		}
-	}
-	return id;
-}
-
-function formatBathroomWomensId(building, floor) {
-	var id = null;
-	while (id == null) {
-		bathroomWomensIdCount++;
-		var tmpId = GlobalStrings.BUILDING_ID + "_" + building + "_" + GlobalStrings.FLOOR_ID + "_" + floor + "_" + GlobalStrings.BATHROOM_WOMENS_ID + "_" + bathroomWomensIdCount;
-		if (!bathroomWomensMap.containsKey(tmpId)) {
-			id = tmpId;
-		}
-	}
-	return id;
-}
-
-function getDistance(marker1, marker2) {
-	return dist(marker1.attr("cx"), marker1.attr("cy"), marker2.attr("cx"), marker2.attr("cy"));
-}
-
-function dist(point1X, point1Y, point2X, point2Y) {
-	var xs = 0;
-	var ys = 0;
-
-	xs = point2X - point1X;
-	xs = xs * xs;
-
-	ys = point2Y - point1Y;
-	ys = ys * ys;
-
-	return Math.floor(Math.sqrt(xs + ys));
 }
 
 // When plotting radio button is clicked
@@ -1512,6 +1187,8 @@ function plotSelect(type) {
 		bathroomMensSelected();
 	} else if (type == GlobalStrings.BATHROOM_WOMENS) {
 		bathroomWomensSelected();
+	} else if (type == GlobalStrings.PARKING_LOT) {
+		parkingLotSelected();
 	} else {
 		LOG.warn("plotSelect called with invalid type " + type);
 	}
@@ -1565,6 +1242,12 @@ function bathroomWomensSelected() {
 	setToolTipTextForCurrentlyPlotting();
 }
 
+function parkingLotSelected() {
+	LOG.debug("Parking lot plotting selected");
+	currentlyPlotting = plottingParkingLot;
+	setToolTipTextForCurrentlyPlotting();
+}
+
 function setToolTipTextForCurrentlyPlotting() {
 	var toolTipText = "";
 	switch (currentlyPlotting) {
@@ -1594,6 +1277,9 @@ function setToolTipTextForCurrentlyPlotting() {
 			break;
 		case plottingBathroomWomens:
 			toolTipText = BATHROOM_WOMENS_TOOL_TIP_TEXT;
+			break;
+		case plottingParkingLot:
+			toolTipText = PARKING_LOT_TOOL_TIP_TEXT;
 			break;
 	}
 	setToolTipText(toolTipText);
@@ -1780,6 +1466,10 @@ function disableAllButtons() {
 	$("#move_all_markers_button").attr("disabled", true);
 	$("#cancel_manual_connect_button").attr("disabled", true);
 	$("#finished_moving_markers_button").attr("disabled", true);
+	$("#marker_opts_dropdown").attr("disabled", true);
+	$("#connect_floors_button").attr("disabled", true);
+	$("#rename_tool_button").attr("disabled", true);
+	$("#main_app_button").attr("disabled", true);
 }
 
 function disableAllButtonsExcept(buttonId) {
@@ -1803,65 +1493,106 @@ function enableAllButtons() {
 	$("#move_all_markers_button").attr("disabled", false);
 	$("#cancel_manual_connect_button").attr("disabled", false);
 	$("#finished_moving_markers_button").attr("disabled", false);
+	$("#marker_opts_dropdown").attr("disabled", false);
+	$("#connect_floors_button").attr("disabled", false);
+	$("#rename_tool_button").attr("disabled", false);
+	$("#main_app_button").attr("disabled", false);
 }
 
 function generateGraph() {
 	var start = new Date().getTime();
-	graph = new Graph();
 	
 	// Make sure all markers are loaded before creating the graph
 	buildingToFloorIdsMap.forEach(function(building, floorList){
 		floorList.forEach(function(floor){
-			loadShapesForBuildingAndFloor(building, floor);
+//			loadShapesForBuildingAndFloor(building, floor);
 			loadMarkersForBuildingAndFloor(building, floor);
 		});
 	});
+	
+	var handicap = false;
 
+	var nonHandicapGraph = new Graph();
+	var handicapGraph = new Graph();
+	
 	allMarkers.forEach(function(markerMap) {
 		markerMap.forEach(function(markerId, marker) {
-			var connectionsString = "";
+			var nonHandicapConnectionString = [];
+			var handicapConnectionString = [];
 			var firstConnection = true;
 
 			var markerConnectionSet = typeToConnectionMap.get(marker.data(GlobalStrings.TYPE)).get(marker);
-			markerConnectionSet.forEach(function(connection) {
-				if (firstConnection) {
-					firstConnection = false;
-				} else {
-					connectionsString += ", ";
-				}
+			if(markerConnectionSet != null) {
+				markerConnectionSet.forEach(function(connection) {
+					if (firstConnection) {
+						firstConnection = false;
+					} else {
+						nonHandicapConnectionString.push(", ");
+						handicapConnectionString.push(", ");
+					}
 
-				if (marker.data(GlobalStrings.TYPE) == GlobalStrings.ROOM || connection.marker.data(GlobalStrings.TYPE) == GlobalStrings.ROOM) {
-					connectionsString += connection.marker.data(GlobalStrings.ID) + ": " + (connection.distance * 5);
-				} else {
-					connectionsString += connection.marker.data(GlobalStrings.ID) + ": " + connection.distance;
-				}
-			});
+					if (marker.data(GlobalStrings.TYPE) == GlobalStrings.ROOM || connection.marker.data(GlobalStrings.TYPE) == GlobalStrings.ROOM) {
+						nonHandicapConnectionString.push(connection.marker.data(GlobalStrings.ID) + ": " + (connection.distance * 5));
+						handicapConnectionString.push(connection.marker.data(GlobalStrings.ID) + ": " + (connection.distance * 5));
+					} else if(marker.data(GlobalStrings.TYPE) == GlobalStrings.STAIRS) {
+						nonHandicapConnectionString.push(connection.marker.data(GlobalStrings.ID) + ": " + connection.distance);
+						handicapConnectionString.push(connection.marker.data(GlobalStrings.ID) + ": " + (connection.distance * 5000));
+					} else if(marker.data(GlobalStrings.TYPE) == GlobalStrings.ELEVATOR) {
+						nonHandicapConnectionString.push(connection.marker.data(GlobalStrings.ID) + ": " + (connection.distance * 5000));
+						handicapConnectionString.push(connection.marker.data(GlobalStrings.ID) + ": " + connection.distance);
+					} else {
+						nonHandicapConnectionString.push(connection.marker.data(GlobalStrings.ID) + ": " + connection.distance);
+						handicapConnectionString.push(connection.marker.data(GlobalStrings.ID) + ": " + connection.distance);
+					}
+				});
 
-			if (connectionsString != "") {
-				graph.addVertex("" + marker.data(GlobalStrings.ID) + "", eval("({" + connectionsString + "})"));
+				if (nonHandicapConnectionString.length != 0) {
+					nonHandicapGraph.addVertex("" + marker.data(GlobalStrings.ID) + "", eval("({" + nonHandicapConnectionString.join("") + "})"));
+				}
+				if(handicapConnectionString.length != 0) {
+					handicapGraph.addVertex("" + marker.data(GlobalStrings.ID) + "", eval("({" + handicapConnectionString.join("") + "})"));
+				}
 			}
 		});
 	});
 
-	var converted = convertMarkersAndPathsToJson(roomMap, doorMap, hallwayMap, pathwayMap, stairMap, elevatorMap, bathroomMensMap, bathroomWomensMap, pathMap);
+	graph = nonHandicapGraph;
+	
+	var converted = convertMarkersAndPathsToJson(allMarkers, pathMap);
 	
 	showShapesForCurrentBuildingAndFloor();
 	showMarkersForCurrentBuildingAndFloor();
 
 	LOG.trace("Took " + (new Date().getTime() - start) + " ms to generate graph");
+	
+	
+//	var svg = paper.toSVG()
+//	paper = null;
+//	$("#raphael").html("");
+//	
+//	setTimeout(function() {
+//		paper = new ScaleRaphael(raphaelDiv, $(raphaelDivJQuery).width(), $(raphaelDivJQuery).height());
+//		paper.importSVG(svg);
+//		console.log("DONE");
+//	}, 100);
 
 	 var request = $.ajax({
 	 	url: "graphUpload",
 	 	type: "POST",
 	 	data: {
 	 		graph: $.param(converted),
-	 		sessionTime: sessionTime
+	 		sessionTime: sessionTime,
+	 		nonHandicapGraphVertices: JSON.stringify(nonHandicapGraph.vertices),
+	 		handicapGraphVertices: JSON.stringify(handicapGraph.vertices)
 	 	},
 	 	dataType: "html"
 	 });
 	
 	 request.fail(function(jqXHR, textStatus) {
 	 	alert("Request failed: " + textStatus);
+	 	LOG.error("Save request failed. Printing graph below so all work is not lost. This can be copy and pasted into the graph.js file");
+	 	// Using console.log() so even if logging is shut off, the graph will be printed on an error
+	 	console.log(JSON.stringify(converted));
 	 });
 	
 	return true;
@@ -1942,7 +1673,7 @@ function findPathSelected() {
 			findPath($("#findPathFrom option:selected").text(), closestBathroom.data(GlobalStrings.ID));
 		}
 	} else if ($("#findPathTo option:selected").text() == "dion_building") {
-		var path = getPathToBuilding(allMarkers, pathMap, graph, $("#findPathFrom option:selected").text(), "dion");
+		var path = getPathToBuilding(graph, $("#findPathFrom option:selected").text(), "dion");
 		findPath(path[0], path[path.length - 1]);
 	} else {
 		findPath($("#findPathFrom option:selected").text(), $("#findPathTo option:selected").text());
@@ -2002,14 +1733,6 @@ function findPath(marker1ID, marker2ID) {
 	}
 
 	LOG.trace("Took " + (new Date().getTime() - start) + " ms to find and show path from " + marker1ID + " to " + marker2ID);
-}
-
-function executeOnAllMarkers(func) {
-	allMarkers.forEach(function(markerMap) {
-		markerMap.forEach(function(markerId, marker) {
-			func(marker);
-		});
-	});
 }
 
 function testForBadPaths() {
@@ -2083,7 +1806,7 @@ function testForBadPaths() {
 	}
 }
 
-function pop() {
+function formatMarker() {
 	var markerFormContent = "<form id='marker_form' onchange='markerFormChanged()' style='width: 244px'>" +
 		"Use this form to select and format the type of marker to plot" +
 		"<div class='form-group'>" +
@@ -2166,6 +1889,9 @@ function markerFormChanged() {
 		case GlobalStrings.BATHROOM_WOMENS:
 			currentlyPlotting = plottingBathroomWomens;
 			break;
+		case GlobalStrings.PARKING_LOT:
+			currentlyPlotting = plottingParkingLot;
+			break;
 	}
 }
 
@@ -2242,9 +1968,17 @@ function hideChangeBuildingFloorPopover() {
 	$("#change_building_floor_popover").html(popoverCaretDown);
 	$("#change_building_floor_popover").popover('toggle');
 	changeBuildingFloorShowing = !changeBuildingFloorShowing;
+	if(buildingAndFloorChanged) {
+		loadChangedBuildingAndFloor();
+		buildingAndFloorChanged = false;
+	}
 }
 
 function changeBuildingFloorChanged() {
+	buildingAndFloorChanged = true;
+}
+
+function loadChangedBuildingAndFloor() {
 	var selectedBuilding;
 	if ($("#building_selector").val() == GlobalStrings.ALL_BUILDINGS_DISPLAY) {
 		selectedBuilding = GlobalStrings.ALL_BUILDINGS;
@@ -2339,3 +2073,105 @@ function moveAllMarkers() {
 		disableAllButtonsExcept("finished_moving_markers_button");
 	}
 }
+
+function connectFloors() {
+	if(connectingFloors) {
+		connectingFloors = false;
+		cancelManualConnect(true);
+		showMarkersForCurrentBuildingAndFloor();
+		$("#connect_floors_button").html("Connect Floors");
+		enableAllButtons();
+		disposableMarkerText.forEach(function(markerId, textElement){
+			var marker;
+			marker = stairMap.get(markerId);
+			if(marker == null) {
+				marker = elevatorMap.get(markerId);
+			}
+			if(marker != null) {
+				marker.attr("opacity", 1);
+			}
+			textElement.remove();
+		});
+	} else {
+		LOG.debug("Connect floors selected");
+		var totalMarkers = getTotalNumberOfMarkers();
+		if (totalMarkers > 1) {
+			manuallyConnectingMode = true;
+			manuallyConnectingMarker = true;
+			
+			connectingFloors = true;
+			$("#connect_floors_button").html("Exit Connecting Floors");
+			disableAllButtonsExcept("connect_floors_button");
+			buildingToFloorIdsMap.get(currentBuilding).forEach(function(floor){
+				loadMarkersForBuildingAndFloor(currentBuilding, floor);
+			});
+			hideAllMarkers();
+			hideAllPaths();
+			stairMap.forEach(function(markerId, marker){
+				if(currentBuilding == GlobalStrings.ALL_BUILDINGS || marker.data(GlobalStrings.BUILDING) == currentBuilding) {
+					var connectionMap = typeToConnectionMap.get(marker.data(GlobalStrings.TYPE)).get(marker);
+					if(connectionMap != null) {
+						var pMap = pathMap;
+						connectionMap.forEach(function(connection){
+							if(connection.marker.data(GlobalStrings.TYPE) == GlobalStrings.STAIR) {
+								var path = pMap.get(marker.data(GlobalStrings.ID) + "<->" + connection.marker.data(GlobalStrings.ID));
+								if(path == null) {
+									path = pMap.get(connection.marker.data(GlobalStrings.ID) + "<->" + marker.data(GlobalStrings.ID));
+								}
+								if(path != null) {
+									path.element.show().toFront();
+								} else {
+									LOG.error("Could not find path between " + marker.data(GlobalStrings.ID) + " and " + connection.marker.data(GlobalStrings.ID));
+								}
+							}
+						});
+					}
+					
+					disposableMarkerText.set(marker.data(GlobalStrings.ID), paper.text(marker.attr("cx"), marker.attr("cy"), marker.data(GlobalStrings.FLOOR)).attr({"font-size": marker.attr("r")}).toFront());
+					marker.show().toFront().attr("opacity", .5);
+				}
+			});
+			elevatorMap.forEach(function(markerId, marker){
+				if(currentBuilding == GlobalStrings.ALL_BUILDINGS || marker.data(GlobalStrings.BUILDING) == currentBuilding) {
+					var connectionMap = typeToConnectionMap.get(marker.data(GlobalStrings.TYPE)).get(marker);
+					if(connectionMap != null) {
+						var pMap = pathMap;
+						connectionMap.forEach(function(connection){
+							if(connection.marker.data(GlobalStrings.TYPE) == GlobalStrings.STAIR) {
+								var path = pMap.get(marker.data(GlobalStrings.ID) + "<->" + connection.marker.data(GlobalStrings.ID));
+								if(path == null) {
+									path = pMap.get(connection.marker.data(GlobalStrings.ID) + "<->" + marker.data(GlobalStrings.ID));
+								}
+								if(path != null) {
+									path.element.show().toFront();
+								} else {
+									LOG.error("Could not find path between " + marker.data(GlobalStrings.ID) + " and " + connection.marker.data(GlobalStrings.ID));
+								}
+							}
+						});
+					}
+					
+					disposableMarkerText.set(marker.data(GlobalStrings.ID), paper.text(marker.attr("cx"), marker.attr("cy"), marker.data(GlobalStrings.FLOOR)).attr({"font-size": marker.attr("r")}).toFront());
+					marker.show().toFront().attr("opacity", .5);
+				}
+			});
+		} else {
+			alertDialog("There are not enough markers to make a connection");
+		}
+	}
+}
+
+function hideAllMarkers() {
+	allMarkers.forEach(function(markerMap) {
+		markerMap.forEach(function(markerId, marker){
+			marker.hide();
+		});
+	});
+}
+
+function hideAllPaths() {
+	pathMap.forEach(function(pathString, pathObject) {
+		pathObject.element.hide();
+	});
+}
+

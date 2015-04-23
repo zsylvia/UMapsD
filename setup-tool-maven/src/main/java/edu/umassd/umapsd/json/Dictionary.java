@@ -9,9 +9,15 @@ import java.util.List;
 public class Dictionary {
 
 	private List<Building> buildings;
+	private List<ParkingLot> parkinglots;
+	private List<Dorm> dorms;
+	private List<Misc> misc;
 	
 	public Dictionary() {
 		buildings = new ArrayList<Building>();
+		parkinglots = new ArrayList<ParkingLot>();
+		dorms = new ArrayList<Dorm>();
+		misc = new ArrayList<Misc>();
 	}
 	
 	public Dictionary(List<Building> buildings) {
@@ -26,6 +32,30 @@ public class Dictionary {
 		this.buildings = buildings;
 	}
 	
+	public List<ParkingLot> getParkingLots() {
+		return parkinglots;
+	}
+	
+	public void setParkingLots(List<ParkingLot> parkinglots) {
+		this.parkinglots = parkinglots;
+	}
+	
+	public List<Dorm> getDorms() {
+		return dorms;
+	}
+	
+	public void setDorms(List<Dorm> dorms) {
+		this.dorms = dorms;
+	}
+	
+	public List<Misc> getMisc() {
+		return misc;
+	}
+	
+	public void setMisc(List<Misc> misc) {
+		this.misc = misc;
+	}
+	
 	@Override
 	public String toString() {
 		StringBuilder str = new StringBuilder();
@@ -38,6 +68,42 @@ public class Dictionary {
 				firstBuilding = false;
 			}
 			str.append(building.toString());
+		}
+		str.append("],");
+		
+		str.append("parkinglots:[");
+		boolean firstParkingLot = true;
+		for(ParkingLot parkingLot : parkinglots) {
+			if(!firstParkingLot) {
+				str.append(",");
+			} else {
+				firstParkingLot = false;
+			}
+			str.append(parkingLot.toString());
+		}
+		str.append("],");
+		
+		str.append("dorms:[");
+		boolean firstDorm = true;
+		for(Dorm dorm : dorms) {
+			if(!firstDorm) {
+				str.append(",");
+			} else {
+				firstDorm = false;
+			}
+			str.append(dorm.toString());
+		}
+		str.append("],");
+		
+		str.append("misc:[");
+		boolean firstMisc = true;
+		for(Misc m : misc) {
+			if(!firstMisc) {
+				str.append(",");
+			} else {
+				firstMisc = false;
+			}
+			str.append(m.toString());
 		}
 		str.append("]}");
 		return str.toString();
@@ -190,6 +256,153 @@ public class Dictionary {
 				}
 
 			}
+		}
+	}
+	
+	public class ParkingLot {
+		private String fullId;
+		private String shortId;
+		private String path;
+		
+		public ParkingLot() {
+			fullId = "";
+			shortId = "";
+			path = "";
+		}
+
+		public ParkingLot(String fullId, String shortId, String path) {
+			this.fullId = fullId;
+			this.shortId = shortId;
+			this.path = path;
+		}
+
+		public String getFullId() {
+			return fullId;
+		}
+
+		public void setFullId(String fullId) {
+			this.fullId = fullId;
+		}
+
+		public String getShortId() {
+			return shortId;
+		}
+
+		public void setShortId(String shortId) {
+			this.shortId = shortId;
+		}
+		
+		public String getPath() {
+			return path;
+		}
+		
+		public void setPath(String path) {
+			this.path = path;
+		}
+		
+		@Override
+		public String toString() {
+			StringBuilder str = new StringBuilder();
+			str.append("{full_id:\"" + fullId + "\",short_id:\"" + shortId + "\",path:\"" + path + "\"}");
+			return str.toString();
+		}
+	}
+	
+	public class Dorm {
+		private String fullId;
+		private String shortId;
+		private String path;
+		
+		public Dorm() {
+			fullId = "";
+			shortId = "";
+			path = "";
+		}
+
+		public Dorm(String fullId, String shortId, String path) {
+			this.fullId = fullId;
+			this.shortId = shortId;
+			this.path = path;
+		}
+
+		public String getFullId() {
+			return fullId;
+		}
+
+		public void setFullId(String fullId) {
+			this.fullId = fullId;
+		}
+
+		public String getShortId() {
+			return shortId;
+		}
+
+		public void setShortId(String shortId) {
+			this.shortId = shortId;
+		}
+		
+		public String getPath() {
+			return path;
+		}
+		
+		public void setPath(String path) {
+			this.path = path;
+		}
+		
+		@Override
+		public String toString() {
+			StringBuilder str = new StringBuilder();
+			str.append("{full_id:\"" + fullId + "\",short_id:\"" + shortId + "\",path:\"" + path + "\"}");
+			return str.toString();
+		}
+	}
+	
+	public class Misc {
+		private String fullId;
+		private String shortId;
+		private String path;
+		
+		public Misc() {
+			fullId = "";
+			shortId = "";
+			path = "";
+		}
+
+		public Misc(String fullId, String shortId, String path) {
+			this.fullId = fullId;
+			this.shortId = shortId;
+			this.path = path;
+		}
+
+		public String getFullId() {
+			return fullId;
+		}
+
+		public void setFullId(String fullId) {
+			this.fullId = fullId;
+		}
+
+		public String getShortId() {
+			return shortId;
+		}
+
+		public void setShortId(String shortId) {
+			this.shortId = shortId;
+		}
+		
+		public String getPath() {
+			return path;
+		}
+		
+		public void setPath(String path) {
+			this.path = path;
+		}
+		
+		@Override
+		public String toString() {
+			StringBuilder str = new StringBuilder();
+			str.append("{full_id:\"" + fullId + "\",short_id:\"" + shortId + "\",path:\"" + path + "\"}");
+			return str.toString();
 		}
 	}
 }

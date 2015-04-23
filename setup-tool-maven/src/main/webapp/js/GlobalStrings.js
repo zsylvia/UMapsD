@@ -2,7 +2,12 @@ var GlobalStrings = {
 	ID: "id",
 	TYPE: "type",
 	ALL_BUILDINGS: "all_buildings",
+	CLOSEST_BATHROOM_MENS: "closest_bathroom_mens",
+	CLOSEST_BATHROOM_WOMENS: "closest_bathroom_womens",
+	
 	ALL_BUILDINGS_DISPLAY: "All Buildings",
+	CLOSEST_BATHROOM_MENS_DISPLAY: "Closest Men's Bathroom",
+	CLOSEST_BATHROOM_WOMENS_DISPLAY: "Closest Women's Bathroom",
 	
 	FLOOR: "floor",
 	BUILDING: "building",
@@ -14,6 +19,9 @@ var GlobalStrings = {
 	ELEVATOR: "elevator",
 	BATHROOM_MENS: "bathroom_mens",
 	BATHROOM_WOMENS: "bathroom_womens",
+	PARKING_LOT: "parking_lot",
+	DORM: "dorm",
+	MISC: "misc",
 	
 	FLOOR_DISPLAY: "Floor",
 	BUILDING_DISPLAY: "Building",
@@ -25,6 +33,9 @@ var GlobalStrings = {
 	ELEVATOR_DISPLAY: "Elevator",
 	BATHROOM_MENS_DISPLAY: "Bathroom (Men's)",
 	BATHROOM_WOMENS_DISPLAY: "Bathroom (Women's)",
+	PARKING_LOT_DISPLAY: "Parking Lot",
+	DORM_DISPLAY: "Dorm",
+	MISC_DISPLAY: "Misc",
 	
 	FLOOR_ID: "flr",
 	BUILDING_ID: "bldg",
@@ -36,6 +47,9 @@ var GlobalStrings = {
 	ELEVATOR_ID: "el",
 	BATHROOM_MENS_ID: "brm",
 	BATHROOM_WOMENS_ID: "brw",
+	PARKING_LOT_ID: "lot",
+	DORM_ID: "drm",
+	MISC_ID: "misc",
 	
 	COLOR: {
 		RED: "red",
@@ -46,6 +60,9 @@ var GlobalStrings = {
 		YELLOW: "yellow",
 		CYAN: "cyan",
 		PINK: "pink",
+		LIME: "lime",
+		VIOLET: "violet",
+		NAVY: "navy",
 		
 		RED_DISPLAY: "Red",
 		BLUE_DISPLAY: "Blue",
@@ -55,6 +72,9 @@ var GlobalStrings = {
 		YELLOW_DISPLAY: "Yellow",
 		CYAN_DISPLAY: "Cyan",
 		PINK_DISPLAY: "Pink",
+		LIME_DISPLAY: "Lime",
+		VIOLET_DISPLAY: "Violet",
+		NAVY_DISPLAY: "Navy",
 		
 		forEachStringPair: function(func) {
 			func(this.RED, this.RED_DISPLAY);
@@ -65,6 +85,9 @@ var GlobalStrings = {
 			func(this.YELLOW, this.YELLOW_DISPLAY);
 			func(this.CYAN, this.CYAN_DISPLAY);
 			func(this.PINK, this.PINK_DISPLAY);
+			func(this.LIME, this.LIME_DISPLAY);
+			func(this.VIOLET, this.VIOLET_DISPLAY);
+			func(this.NAVY, this.NAVY_DISPLAY);
 		}
 	},
 	
@@ -81,12 +104,18 @@ var GlobalStrings = {
 		func(this.ELEVATOR, this.ELEVATOR_DISPLAY);
 		func(this.BATHROOM_MENS, this.BATHROOM_MENS_DISPLAY);
 		func(this.BATHROOM_WOMENS, this.BATHROOM_WOMENS_DISPLAY);
+		func(this.PARKING_LOT, this.PARKING_LOT_DISPLAY);
+		func(this.CLOSEST_BATHROOM_MENS, this.CLOSEST_BATHROOM_MENS_DISPLAY);
+		func(this.CLOSEST_BATHROOM_WOMENS, this.CLOSEST_BATHROOM_WOMENS_DISPLAY);
+		func(this.DORM, this.DORM_DISPLAY);
+		func(this.MISC, this.MISC_DISPLAY);
 		this.COLOR.forEachStringPair(func);
 	},
 	
 	forEachMarkerStringPair: function(func) {
 		this.forEachStringPair(function(normal, display){
-			if(normal != GlobalStrings.FLOOR && normal != GlobalStrings.BUILDING && !GlobalStrings.COLOR.hasOwnProperty(normal.toUpperCase())) {
+			if(normal != GlobalStrings.FLOOR && normal != GlobalStrings.BUILDING && !GlobalStrings.COLOR.hasOwnProperty(normal.toUpperCase())
+					&& normal != GlobalStrings.ALL_BUILDINGS && normal != GlobalStrings.CLOSEST_BATHROOM_MENS && normal != GlobalStrings.CLOSEST_BATHROOM_WOMENS) {
 				func(normal, display);
 			}
 		});

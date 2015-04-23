@@ -13,6 +13,8 @@ var LoggingLevel = {
 	ALL: new LoggingLevel(0, "ALL")
 }
 
+var logHistory = [];
+
 function Logger(level) {
 	var Level = LoggingLevel.OFF;
 	
@@ -65,11 +67,15 @@ function Logger(level) {
 		if(color == null) {
 			color = "color:black";
 		}
+		var logString;
 		if(caller.name != "") {
-			console.log("%c" + consoleTag() + level.levelStr + " [" + caller.name + "] - " + text, color);
+			logString = consoleTag() + level.levelStr + " [" + caller.name + "] - " + text;
 		} else {
-			console.log("%c" + consoleTag() + level.levelStr + " - " + text, color);
+			logString = consoleTag() + level.levelStr + " - " + text;
+			
 		}
+		logHistory.push(logString);
+		console.log("%c" + logString, color);
 	}
 
 	function consoleTag() {
@@ -111,6 +117,10 @@ function Logger(level) {
 		}
 
 		return year + "-" + month + "-" + day + " " + hours + ":" + minutes + ":" + seconds + "." + millis;
+	}
+	
+	this.printLogHistory = function(htmlElementId) {
+		$("#"+htmlElementId).html(logHistory.join("<br>"));
 	}
 	
 	if(level != null) {

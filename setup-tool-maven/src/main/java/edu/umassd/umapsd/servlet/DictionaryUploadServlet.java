@@ -41,54 +41,84 @@ public class DictionaryUploadServlet extends HttpServlet {
 		long sessionTime = Long.valueOf(request.getParameter("sessionTime"));
 		String dictionaryJson = convertDictionaryToJson(dictionary);
 		String nameChangeMapJson = convertNameChangeMapToJson(nameChangeMap);
-		File dictionaryDir = new File(getServletContext().getRealPath("/dictionary"));
-		if(dictionaryDir.exists()) {
-			boolean saveDictionaryFile = false;
-			boolean saveNameChangeMapFile = false;
-			File oldDictionary = new File(dictionaryDir, "dictionary.js");
-			if(oldDictionary.exists()) {
-				if(!FileUtils.readFileToString(oldDictionary).equals(dictionaryJson)) {
-					saveDictionaryFile = true;
-					FileUtils.moveFile(oldDictionary, new File(dictionaryDir, "dictionary.js."+format.format(new Date(sessionTime))));
-				} else {
-					// No changes were made
-				}
-			}
-			if(saveDictionaryFile) {
-				File newDictionary = new File(dictionaryDir, "dictionary.js");
-				if(!newDictionary.exists()) {
-					newDictionary.createNewFile();
-				}
-				FileUtils.writeStringToFile(newDictionary, dictionaryJson, false);
-			}
-			
-			File oldNameChangeMapFile = new File(dictionaryDir, "nameChangeMap.js");
-			if(oldNameChangeMapFile.exists()) {
-				if(!FileUtils.readFileToString(oldNameChangeMapFile).equals(nameChangeMapJson)) {
-					saveNameChangeMapFile = true;
-					FileUtils.moveFile(oldNameChangeMapFile, new File(dictionaryDir, "nameChangeMap.js.old"));
-				} else {
-					// No changes were made
-				}
-				if(saveNameChangeMapFile) {
-					File newNameChangeMapFile = new File(dictionaryDir, "nameChangeMap.js");
-					if(!newNameChangeMapFile.exists()) {
-						newNameChangeMapFile.createNewFile();
+		
+		try {
+			File dictionaryDir = new File(getServletContext().getRealPath("/dictionary"));
+			if(dictionaryDir.exists()) {
+				boolean saveDictionaryFile = false;
+				boolean saveNameChangeMapFile = false;
+				File oldDictionary = new File(dictionaryDir, "dictionary.js");
+				if(oldDictionary.exists()) {
+					System.out.println("Old dictionary exists");
+					if(!FileUtils.readFileToString(oldDictionary).equals(dictionaryJson)) {
+						saveDictionaryFile = true;
+						FileUtils.moveFile(oldDictionary, new File(dictionaryDir, "dictionary.js."+format.format(new Date(sessionTime))));
+						System.out.println("Moved old dictionary to dictionary.js." + format.format(new Date(sessionTime)));
+					} else {
+						// No changes were made
+						System.out.println("No changes have been made to dictionary");
 					}
-					FileUtils.writeStringToFile(newNameChangeMapFile, nameChangeMapJson, false);
+				} else {
+					System.out.println("Old dictionary file does not exist");
+				}
+				if(saveDictionaryFile) {
+					File newDictionary = new File(dictionaryDir, "dictionary.js");
+					if(!newDictionary.exists()) {
+						newDictionary.createNewFile();
+						
+						System.out.println("Created new dictionary file");
+					}
+					FileUtils.writeStringToFile(newDictionary, dictionaryJson, false);
+					
+					System.out.println("Saved dictionary file");
+				}
+				
+				File oldNameChangeMapFile = new File(dictionaryDir, "nameChangeMap.js");
+				if(oldNameChangeMapFile.exists()) {
+					System.out.println("Old name change map exists");
+					if(!FileUtils.readFileToString(oldNameChangeMapFile).equals(nameChangeMapJson)) {
+						saveNameChangeMapFile = true;
+						FileUtils.moveFile(oldDictionary, new File(dictionaryDir, "nameChangeMap.js."+format.format(new Date(sessionTime))));
+						System.out.println("Moved old dictionary to nameChangeMap.js." + format.format(new Date(sessionTime)));
+					} else {
+						// No changes were made
+						System.out.println("No changes have been made to name change map");
+					}
+					if(saveNameChangeMapFile) {
+						File newNameChangeMapFile = new File(dictionaryDir, "nameChangeMap.js");
+						if(!newNameChangeMapFile.exists()) {
+							newNameChangeMapFile.createNewFile();
+							
+							System.out.println("Created new name change map");
+						}
+						FileUtils.writeStringToFile(newNameChangeMapFile, nameChangeMapJson, false);
+						
+						System.out.println("Saved name change map");
+					}
+				} else {
+					System.out.println("Old name change map does not exist");
 				}
 			}
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 	
 	private String convertDictionaryToJson(String parameter) throws UnsupportedEncodingException {
 		String decode = URLDecoder.decode(parameter, "UTF-8");
 		Pattern buildingsPattern = Pattern.compile("buildings\\[(\\d+)\\]\\[(.+?)\\]\\[*(\\d*)\\]*\\[*([id\\|shapes]*)\\]*\\[*(\\d*)\\]*\\[*([id\\|path]*)\\]*=(.+)");
+		Pattern parkingLotsPattern = Pattern.compile("parkinglots\\[(\\d+)\\]\\[([id\\|path]*)\\]=(.+)");
+		Pattern dormsPattern = Pattern.compile("dorms\\[(\\d+)\\]\\[([id\\|path]*)\\]=(.+)");
+		Pattern pathsPattern = Pattern.compile("dorms\\[(\\d+)\\]\\[([id\\|x1\\|x2\\|y1\\|y2]*)\\]=(.+)");
 		Dictionary dictionary = new Dictionary();
 		List<Dictionary.Building> buildings = new ArrayList<Dictionary.Building>();
+		List<Dictionary.ParkingLot> parkingLots = new ArrayList<Dictionary.ParkingLot>();
+		List<Dictionary.Dorm> dorms = new ArrayList<Dictionary.Dorm>();
 		String[] split = decode.split("&");
 		for(String s : split) {
 			Matcher buildingMatcher = buildingsPattern.matcher(s);
+			Matcher parkingLotMatcher = parkingLotsPattern.matcher(s);
+			Matcher dormMatcher = dormsPattern.matcher(s);
 			if(buildingMatcher.find()) {
 				int buildingNum = Integer.valueOf(buildingMatcher.group(1));
 				Dictionary.Building building;
@@ -138,10 +168,48 @@ public class DictionaryUploadServlet extends HttpServlet {
 				}
 				
 				buildings.set(buildingNum, building);
+			} else if(parkingLotMatcher.find()) {
+				int parkingLotNum = Integer.valueOf(parkingLotMatcher.group(1));
+				Dictionary.ParkingLot parkingLot;
+				if(parkingLots.isEmpty() || parkingLotNum >= parkingLots.size()) {
+					parkingLot = dictionary.new ParkingLot();
+					parkingLots.add(parkingLotNum, parkingLot);
+				} else {
+					parkingLot = parkingLots.get(parkingLotNum);
+				}
+				
+				if(parkingLotMatcher.group(2).equals("id")) {
+					parkingLot.setFullId(parkingLotMatcher.group(3));
+					parkingLot.setShortId(parkingLotMatcher.group(3));
+				} else if(parkingLotMatcher.group(2).equals("path")) {
+					parkingLot.setPath(parkingLotMatcher.group(3));
+				} else {
+					System.out.println("Error. " + parkingLotMatcher.group(2) + " does not equal id or path");
+				}
+			} else if(dormMatcher.find()) {
+				int dormNum = Integer.valueOf(dormMatcher.group(1));
+				Dictionary.Dorm dorm;
+				if(dorms.isEmpty() || dormNum >= dorms.size()) {
+					dorm = dictionary.new Dorm();
+					dorms.add(dormNum, dorm);
+				} else {
+					dorm = dorms.get(dormNum);
+				}
+				
+				if(dormMatcher.group(2).equals("id")) {
+					dorm.setFullId(dormMatcher.group(3));
+					dorm.setShortId(dormMatcher.group(3));
+				} else if(dormMatcher.group(2).equals("path")) {
+					dorm.setPath(dormMatcher.group(3));
+				} else {
+					System.out.println("Error. " + dormMatcher.group(2) + " does not equal id or path");
+				}
 			}
 		}
 		
 		dictionary.setBuildings(buildings);
+		dictionary.setParkingLots(parkingLots);
+		dictionary.setDorms(dorms);
 		
 		return "var dictionary=" + dictionary.toString();
 	}

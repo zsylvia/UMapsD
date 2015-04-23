@@ -21,6 +21,11 @@
 		<servlet-class>edu.umassd.umapsd.servlet.DictionaryUploadServlet</servlet-class>
 		<load-on-startup>1</load-on-startup>
 	</servlet>
+	<servlet>
+		<servlet-name>MainServlet</servlet-name>
+		<servlet-class>edu.umassd.umapsd.servlet.MainServlet</servlet-class>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
 	
 	<servlet-mapping>
 		<servlet-name>RdpServlet</servlet-name>
@@ -37,6 +42,10 @@
 	<servlet-mapping>
 		<servlet-name>DictionaryUploadServlet</servlet-name>
 		<url-pattern>/dictionaryUpload/*</url-pattern>
+	</servlet-mapping>
+	<servlet-mapping>
+		<servlet-name>MainServlet</servlet-name>
+		<url-pattern>/main/*</url-pattern>
 	</servlet-mapping>
 	
 </web-app>
