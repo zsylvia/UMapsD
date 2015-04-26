@@ -11,11 +11,18 @@
 		<script src="js/rdp.js" type="text/javascript"></script>
 		<script src="js/umapsd-conversions.js" type="text/javascript"></script>
 		<script src="js/pathfinding.js" type="text/javascript"></script>
+		<script src="js/mainApp.js" type="text/javascript"></script>
 		<script src="https://code.jquery.com/ui/1.11.3/jquery-ui.min.js" type="text/javascript"></script>
 		
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
 		<link rel="stylesheet" href="css/style.css">
+		
+
+
 		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+		
+
+
 		<body oncontextmenu="return false;">
 	</head>
 	<body>
@@ -34,8 +41,16 @@
 
 		    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
 		      <ul id="navbar" class="nav navbar-nav">
-		      	<form class="navbar-form navbar-left" role="search">
+		      	
+		      			      	
+		      	<li id="direction_btn">
+					<a id="direction_button" class="btn" role="button" onclick="startupDirections();">
+						Directions
+					</a>
+				</li>
+				
 		      		
+<<<<<<< HEAD
 
 					<div class="input-group">
 				
@@ -49,14 +64,340 @@
 					    <li class="divider"></li>
 					    <li><a href="#">Separated link</a></li>
   					</ul>
+=======
+		      	<form class="navbar-form navbar-left" role="search" id="FromDropdown">	
+		      		<label><font color="white">From</font></label>	   
+					<div class="btn-group">		
+						  <button class="btn btn-default dropdown-toggle" data-toggle="dropdown" data-placeholder="true">
+						  	From <span class="caret"></span>
+						  </button>
+						  <ul class="dropdown-menu" role="menu">
+							  	<li><a  onclick="clearAll(); academicBuildingsDropIShow()">
+									Academic Buildings
+								</a></li>
+								<li><a   onclick="clearAll()">
+									Campus Center
+								</a></li>
+								<li><a   onclick="clearAll()">
+									Admissions Office
+								</a></li>
+								<li><a  onclick="clearAll(); inputRoomShow()">
+									Parking Lots
+								</a></li>
+								<li><a   onclick="clearAll(); inputRoomShow()">
+									Tripp Athletic Center
+								</a></li>
+								<li><a   onclick="clearAll(); eateriesDropIShow()">
+									Eateries
+								</a></li>
+								<li><a   onclick="clearAll()">
+									Nurses Office
+								</a></li>
+								<li><a   onclick="clearAll(); residentialDropIShow()">
+									Residential Buildings
+								</a></li>
+								<li><a  onclick="clearAll()">
+									Foster Administration
+								</a></li>
+								<li><a   onclick="clearAll(); athleticFieldDropIShow()">
+									Athletic Fields
+								</a></li>
+								<li><a   onclick="clearAll(); inputRoomShow()">
+									Claire T. public Library
+								</a></li>
+						  </ul>
 					</div>
-					<div class="input-group">
-						<span class="input-group-addon" id="basic-addon1">To</span>
-						<input type="text" class="form-control" placeholder="Room # (ex. 'Larts 203')" aria-describedby="basic-addon1">
+					<div class="btn-group" id="academicBuildingsDropI">		
+						  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+						  	Academic Buildings <span class="caret"></span>
+						  </button>
+						  <ul class="dropdown-menu" role="menu">				  	
+							  	<li><a  class="btn" role="button" onclick="clearAll(); academicBuildingsDropIShow(); inputRoomShow()">
+									CVPA
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAll(); academicBuildingsDropIShow(); inputRoomShow()">
+									Claire T. Carney Library
+								</a></li>
+							  	<li><a  class="btn" role="button" onclick="clearAll(); academicBuildingsDropIShow(); inputRoomShow()">
+									Dion
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAll(); academicBuildingsDropIShow(); inputRoomShow()">
+									Liberal Arts
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAll(); academicBuildingsDropIShow(); inputRoomShow()">
+									Science and Engineering
+								</a></li>
+						  </ul>
+					</div>
+					<div class="btn-group" id="eateriesDropI">		
+						  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+						  	Eateries <span class="caret"></span>
+						  </button>
+						  <ul class="dropdown-menu" role="menu">				  	
+							  	<li><a  class="btn" role="button" onclick="clearAll(); eateriesDropIShow();">
+									The Marketplace
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAll(); eateriesDropIShow();">
+									Commuter Cafe
+								</a></li>
+							  	<li><a  class="btn" role="button" onclick="clearAll();  eateriesDropIShow();">
+									Wendy's
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAll(); eateriesDropIShow();">
+									Birch Grill
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAll();  eateriesDropIShow();">
+									Maple Ridge Cafe
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAll();  eateriesDropIShow();">
+									Oak Glen Grill
+								</a></li>
+						  </ul>
+					</div>
+					<div class="btn-group" id="residentialDropI">		
+						  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+						  	Residential Buildings <span class="caret"></span>
+						  </button>
+						  <ul class="dropdown-menu" role="menu">				  	
+							  	<li><a  class="btn" role="button" onclick="clearAll(); residentialDropIShow();">
+									Aspen
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAll(); residentialDropIShow();">
+									Cedar Dell
+								</a></li>
+									<li><a  class="btn" role="button" onclick="clearAll();  residentialDropIShow();">
+									Birch
+								</a></li>
+							  	<li><a  class="btn" role="button" onclick="clearAll();  residentialDropIShow();">
+									Chestnut
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAll(); residentialDropIShow();">
+									Elmwood
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAll();  residentialDropIShow();">
+									Evergreen
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAll();  residentialDropIShow();">
+									Hickory
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAll();  residentialDropIShow();">
+									Ivy
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAll();  residentialDropIShow();">
+									Maple Ridge
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAll();  residentialDropIShow();">
+									Oak Glen
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAll();  residentialDropIShow();">
+									Pine Dale
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAll();  residentialDropIShow();">
+									Roberts
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAll();  residentialDropIShow();">
+									Willow
+								</a></li>
+						  </ul>
+					</div>
+					
+					<div class="btn-group" id="athleticFieldDropI">		
+						  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+						  	Athletic Fields <span class="caret"></span>
+						  </button>
+						  <ul class="dropdown-menu" role="menu">				  	
+							  	<li><a  class="btn" role="button" onclick="clearAll(); athleticFieldDropIShow();">
+									Field1
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAll(); athleticFieldDropIShow();">
+									Field2
+								</a></li>
+						  </ul>
+					</div>
+					<div class="input-group" id="inputRoom">
+						<span class="input-group-addon" id="basic-addon1">From</span>
+						<input type="text" class="form-control" placeholder="Room # (ex. '203')" aria-describedby="basic-addon1">
 			
 					</div>
 				</form>
-		
+				<form class="navbar-form navbar-left" role="search" id="ToDropdown">
+					<label><font color="white">To</font></label>			   
+					<div class="btn-group">		
+						  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+						  	To <span class="caret"></span>
+						  </button>
+						  <ul class="dropdown-menu" role="menu">
+						  	
+							  	<li><a  class="btn" role="button" onclick="clearAllO(); academicBuildingsDropOShow()">
+									Academic Buildings
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAllO()">
+									Campus Center
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAllO()">
+									Nearest Bathroom
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAllO()">
+									Admissions Office
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAllO(); inputORoomShow()">
+									Parking Lots
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAllO(); inputORoomShow()">
+									Tripp Athletic Center
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAllO(); eateriesDropOShow()">
+									Eateries
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAllO()">
+									Nurses Office
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAllO(); residentialDropOShow()">
+									Residential Buildings
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAllO()">
+									Foster Administration
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAllO(); athleticFieldDropOShow()">
+									Athletic Fields
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAllO(); inputORoomShow()">
+									Claire T. public Library
+								</a></li>
+						  </ul>
+					</div>
+					<div class="btn-group" id="academicBuildingsDropO">		
+						  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+						  	Academic Buildings <span class="caret"></span>
+						  </button>
+						  <ul class="dropdown-menu" role="menu">				  	
+							  	<li><a  class="btn" role="button" onclick="clearAllO(); academicBuildingsDropOShow(); inputORoomShow();">
+									CVPA
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAllO(); academicBuildingsDropOShow(); inputORoomShow();">
+									Claire T. Carney Library
+								</a></li>
+							  	<li><a  class="btn" role="button" onclick="clearAllO(); academicBuildingsDropOShow(); inputORoomShow();">
+									Dion
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAllO(); academicBuildingsDropOShow(); inputORoomShow();">
+									Liberal Arts
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAllO(); academicBuildingsDropOShow(); inputORoomShow();">
+									Science and Engineering
+								</a></li>
+						  </ul>
+					</div>
+					<div class="btn-group" id="eateriesDropO">		
+						  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+						  	Eateries <span class="caret"></span>
+						  </button>
+						  <ul class="dropdown-menu" role="menu">				  	
+							  	<li><a  class="btn" role="button" onclick="clearAllO(); eateriesDropOShow();">
+									The Marketplace
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAllO(); eateriesDropOShow();">
+									Commuter Cafe
+								</a></li>
+							  	<li><a  class="btn" role="button" onclick="clearAllO();  eateriesDropOShow();">
+									Wendy's
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAllO(); eateriesDropOShow();">
+									Birch Grill
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAllO();  eateriesDropOShow();">
+									Maple Ridge Cafe
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAllO();  eateriesDropOShow();">
+									Oak Glen Grill
+								</a></li>
+						  </ul>
+>>>>>>> 1b4cfbe196733d06fcc3f735280e8027d3701c1c
+					</div>
+					<div class="btn-group" id="residentialDropO">		
+						  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+						  	Residential Buildings <span class="caret"></span>
+						  </button>
+						  <ul class="dropdown-menu" role="menu">				  	
+							  	<li><a  class="btn" role="button" onclick="clearAllO(); residentialDropOShow();">
+									Aspen
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAllO(); residentialDropOShow();">
+									Cedar Dell
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAllO();  residentialDropOShow();">
+									Birch
+								</a></li>
+							  	<li><a  class="btn" role="button" onclick="clearAllO();  residentialDropOShow();">
+									Chestnut
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAllO(); residentialDropOShow();">
+									Elmwood
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAllO();  residentialDropOShow();">
+									Evergreen
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAllO();  residentialDropOShow();">
+									Hickory
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAllO();  residentialDropOShow();">
+									Ivy
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAllO();  residentialDropOShow();">
+									Maple Ridge
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAllO();  residentialDropOShow();">
+									Oak Glen
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAllO();  residentialDropOShow();">
+									Pine Dale
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAllO();  residentialDropOShow();">
+									Roberts
+								</a></li>
+								<li><a  class="btn" role="button" onclick="clearAllO();  residentialDropOShow();">
+									Willow
+								</a></li>
+						  </ul>
+					</div>
+					
+					<div class="btn-group" id="athleticFieldDropO">		
+						  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+						  	Athletic Fields <span class="caret"></span>
+						  </button>
+						  <ul class="dropdown-menu" role="menu">				  	
+						  	<li><a  class="btn" role="button" onclick="clearAllO(); athleticFieldDropOShow();">
+								Field1
+							</a></li>
+							<li><a  class="btn" role="button" onclick="clearAllO(); athleticFieldDropOShow();">
+								Field2
+							</a></li>
+						  </ul>
+					</div>
+					<div class="input-group" id="inputORoomShow">
+						<span class="input-group-addon" id="basic-addon1">To</span>
+						<input type="text" class="form-control" placeholder="Room # (ex. '203')" aria-describedby="basic-addon1">
+			
+					</div>
+				
+				</form>
+				
+				<li>
+					<a id="handicap_toggle" tabindex="0" class="btn" href="#" onclick="">
+						Handicap?
+					</a>
+				</li>
+				<li>
+					<a id="generate_path" tabindex="0" class="btn" href="#" onclick="generatePath()">
+						Get Directions!
+					</a>
+				</li>
+
+
+				<form class="navbar-form navbar-left" role="search" id="dividingForm">
+				</form>
+
+				
 				<li>
 					<a id="change_building_floor_popover" tabindex="0" class="btn" href="#" title="Change Building/Floor" onclick="changeBuildingFloor()">
 						Change Building/Floor
@@ -64,7 +405,7 @@
 					</a>
 				</li>
 				<li>
-					<a id="gps_location_button" class="btn" role="button" onclick="">
+					<a id="gps_location_button" class="btn" role="button" onclick="getLocation();">
 						Where am I?
 					</a>
 				</li>
@@ -101,7 +442,24 @@
 		    </div><!-- /.navbar-collapse -->
 		  </div><!-- /.container-fluid -->
 		</nav>
-		
+		<script>
+			window.onload=LoadItUp();
+			window.onload=clearAll();
+			window.onload=clearAllO();
+			//window.onload=tryingStuff();
+			var counter=0;
+
+			$(function(){
+  
+			  $(".dropdown-menu li a").click(function(){
+			    
+			      $(this).parents(".btn-group").children(".btn").text($(this).text());
+			  });
+
+			});
+
+			
+		</script>
 
 		<!--
 		<label for='graph_input'>Import Graph File</label>
