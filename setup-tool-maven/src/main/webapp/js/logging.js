@@ -19,7 +19,8 @@ function Logger(level) {
 	var Level = LoggingLevel.OFF;
 	
 	this.setLoggingLevel = function(level) {
-		if (level == LoggingLevel.OFF || level == LoggingLevel.ERROR || level == LoggingLevel.WARN || level == LoggingLevel.INFO || level == LoggingLevel.DEBUG || level == LoggingLevel.TRACE || level == LoggingLevel.ALL) {
+		if (level == LoggingLevel.OFF || level == LoggingLevel.ERROR || level == LoggingLevel.WARN || level == LoggingLevel.INFO || 
+			level == LoggingLevel.DEBUG || level == LoggingLevel.TRACE || level == LoggingLevel.ALL) {
 			Level = level;
 		} else {
 			error("Cannot set logging level to " + level);
@@ -33,33 +34,53 @@ function Logger(level) {
 		return false;
 	}
 
-	this.trace = function(text) {
+	this.trace = function(text, isObject) {
 		if (isLevelEnabled(LoggingLevel.TRACE)) {
-			log(LoggingLevel.TRACE, text, this.trace.caller);
+			if(!isObject) {
+				log(LoggingLevel.TRACE, text, this.trace.caller);
+			} else {
+				logObject(text);
+			}
 		}
 	}
 
-	this.debug = function(text) {
+	this.debug = function(text, isObject) {
 		if (isLevelEnabled(LoggingLevel.DEBUG)) {
-			log(LoggingLevel.DEBUG, text, this.debug.caller);
+			if(!isObject) {
+				log(LoggingLevel.DEBUG, text, this.debug.caller);
+			} else {
+				logObject(text);
+			}
 		}
 	}
 
-	this.info = function(text) {
+	this.info = function(text, isObject) {
 		if (isLevelEnabled(LoggingLevel.INFO)) {
-			log(LoggingLevel.INFO, text, this.info.caller);
+			if(!isObject) {
+				log(LoggingLevel.INFO, text, this.info.caller);
+			} else {
+				logObject(text);
+			}
 		}
 	}
 
-	this.warn = function(text) {
+	this.warn = function(text, isObject) {
 		if (isLevelEnabled(LoggingLevel.WARN)) {
-			log(LoggingLevel.WARN, text, this.warn.caller);
+			if(!isObject) {
+				log(LoggingLevel.WARN, text, this.warn.caller);
+			} else {
+				logObject(text);
+			}
 		}
 	}
 
-	this.error = function(text) {
+	this.error = function(text, isObject) {
 		if (isLevelEnabled(LoggingLevel.ERROR)) {
-			log(LoggingLevel.ERROR, text, this.error.caller, "color:red");
+			if(!isObject) {
+				log(LoggingLevel.ERROR, text, this.error.caller, "color:red");
+			} else {
+				logObject(text);
+			}
 		}
 	}
 	
@@ -74,8 +95,12 @@ function Logger(level) {
 			logString = consoleTag() + level.levelStr + " - " + text;
 			
 		}
-		logHistory.push(logString);
 		console.log("%c" + logString, color);
+		logHistory.push(logString);
+	}
+	
+	function logObject(obj) {
+		console.log(obj);
 	}
 
 	function consoleTag() {
@@ -120,6 +145,7 @@ function Logger(level) {
 	}
 	
 	this.printLogHistory = function(htmlElementId) {
+		$("#"+htmlElementId).css("overflow", "scroll");
 		$("#"+htmlElementId).html(logHistory.join("<br>"));
 	}
 	

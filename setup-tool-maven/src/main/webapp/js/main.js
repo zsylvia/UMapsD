@@ -35,8 +35,9 @@ var directionsPathArrayPosition;
 var gettingDirections = false;
 var directionsHTML;
 
-currentBuilding = GlobalStrings.ALL_BUILDINGS;
-currentFloor = "1";
+var mobileView;
+
+var touchEvent;
 
 var LOG = new Logger(LoggingLevel.ALL);
 
@@ -52,6 +53,8 @@ $(document).ready(function() {
 		nonHandicapGraph.vertices = nonHandicapGraphVertices;
 		handicapGraph.vertices = handicapGraphVertices;
 		
+		loadMarkersForAllBuildingsAndFloors();
+		
 		showRaphael();
 		
 		$(".nav a").on("click", function(){
@@ -63,12 +66,19 @@ $(document).ready(function() {
 		document.getElementById("raphael").addEventListener("touchstart", function(event) {
 			var ev = event;
 			if (ev.preventDefault) ev.preventDefault();
-
-			if(!ignoreClick && !draggingEverythingIgnoreClick) {
+			touchEvent = ev;
+		}, false);
+		
+		document.getElementById("raphael").addEventListener("touchend", function(event) {
+			var ev = touchEvent;
+			if(draggingEverythingIgnoreClick) {
+				ignoreClick = true;
+				draggingEverythingIgnoreClick = false;
+			}
+			if(!ignoreClick) {
 				var rr = paperResizeRatio;
 				var clickX = (ev.touches[0].pageX * rr) + paperShiftX;
 				var clickY = ((ev.touches[0].pageY - ($(document).height() - $("#raphael").height()))* rr) + paperShiftY;
-				console.log(ev.touches[0]);
 				
 				if(selectingFromOnMap) {
 					selectedFromMarkerOnMap = getClosestMarkerToPoint(clickX, clickY);
@@ -88,7 +98,7 @@ $(document).ready(function() {
 				ignoreClick = false;
 			}
 		}, false);
-
+		
 		$("#raphael").mouseup(function(event) {
 			if(draggingEverythingIgnoreClick) {
 				ignoreClick = true;
@@ -142,7 +152,7 @@ function changeBuildingFloor() {
 		directionsHTML = $("#dialog_modal").html();
 	}
 	var buildingFloorContent = [];
-	buildingFloorContent.push("<form id='change_building_floor_form' onchange='changeBuildingFloorChanged()'>");
+	buildingFloorContent.push("<form id='change_building_floor_form' onchange='changeBuildingFloorChanged()' change='changeBuildingFloorChanged()'>");
 	buildingFloorContent.push("<div class='form-group'>");
 	buildingFloorContent.push("<label for='building_selector'>Building</label>");
 	buildingFloorContent.push("<select class='form-control' id='building_selector' name='building' class='form-control'>");
@@ -190,6 +200,10 @@ function changeBuildingFloor() {
 	$("#dialog_modal .modal-body").html(buildingFloorContent.join(""));
 	$("#dialog_modal .modal-footer").html(footerButtonsHTML.join(""));
 	$('#dialog_modal').modal('toggle');
+	
+	$("#change_building_floor_form").on("change", function(){
+		changeBuildingFloorChanged();
+	});
 	changeBuildingFloorShowing = true;
 }
 
@@ -243,7 +257,7 @@ function changeBuildingFloorSubmit() {
 	}
 	if(reload) {
 		showLoading();
-
+		
 		setTimeout(function() {
 			showShapesForCurrentBuildingAndFloor();
 			showRaphael();
@@ -311,12 +325,12 @@ function getDirections() {
 		menuHTML.push("<option value='select_type'>Select Type</option>");
 		menuHTML.push(defaultDirectionsTypeHTML()); 
 		menuHTML.push("</select>");
+		menuHTML.push("</div>");
 		menuHTML.push("<div class='form-group'>");
 		menuHTML.push("<label>Handicap Accessible</label>");
 		menuHTML.push("<div class='form-control'>");
 		menuHTML.push("<label class='radio-inline'><input id='handicap_yes' type='radio' name='handicap' value='yes' onclick='handicapYes()'>Yes</label>");
 		menuHTML.push("<label class='radio-inline'><input id='handicap_no' type='radio' name='handicap' value='no' checked='checked' onclick='handicapNo()'>No</label>");
-		menuHTML.push("</div>");
 		menuHTML.push("</div>");
 		menuHTML.push("</div>");
 
@@ -348,10 +362,11 @@ function handicapNo() {
 
 function directionsFromTypeChange() {
 	var html = [];
-	html.push("<label for='directions_to_type'>From (<span><a href='#' onclick='selectFromOnMap()'>Select On Map</a></span>)</label>");
 	if(selectedFromMarkerOnMap != null) {
+		html.push("<label for='directions_from_type'>From</label>");
 		html.push("<div class='text-primary'>Point selected on map (<span><a href='#' onclick='unselectFromOnMap()'>Unselect point</a></span>)</div>");
 	} else {
+		html.push("<label for='directions_from_type'>From (<span><a href='#' onclick='selectFromOnMap()'>Select On Map</a></span>)</label>");
 		html.push("<select class='form-control' id='directions_from_type' name='directions_from_type' onchange='directionsFromTypeChange()'>");
 		var fromType = $("#directions_from_type option:selected").val();
 		if(fromType == GlobalStrings.BUILDING) {
@@ -475,6 +490,10 @@ function directionsFromTypeChange() {
 			directionsFromDorm = null;
 			directionsFromMisc = null;
 			html.push(defaultDirectionsTypeHTML(GlobalStrings.MISC) + "</select>");
+		} else {
+			html.push("<option value='select_type'>Select Type</option>");
+			html.push(defaultDirectionsTypeHTML()); 
+			html.push("</select>");
 		}
 	}
 	
@@ -483,10 +502,11 @@ function directionsFromTypeChange() {
 
 function directionsToTypeChange() {
 	var html = [];
-	html.push("<label for='directions_to_type'>To (<span><a href='#' onclick='selectToOnMap()'>Select On Map</a></span>)</label>");
 	if(selectedToMarkerOnMap != null) {
+		html.push("<label for='directions_to_type'>To</label>");
 		html.push("<div class='text-primary'>Point selected on map (<span><a href='#' onclick='unselectToOnMap()'>Unselect point</a></span>)</div>");
 	} else {
+		html.push("<label for='directions_to_type'>To (<span><a href='#' onclick='selectToOnMap()'>Select On Map</a></span>)</label>");
 		html.push("<select class='form-control' id='directions_to_type' name='directions_to_type' onchange='directionsToTypeChange()'>");
 		var toType = $("#directions_to_type option:selected").val();
 		if(toType == GlobalStrings.BUILDING) {
@@ -610,6 +630,10 @@ function directionsToTypeChange() {
 			directionsToDorm = null;
 			directionsToMisc = null;
 			html.push(defaultDirectionsTypeHTML(GlobalStrings.MISC) + "</select>");
+		} else {
+			html.push("<option value='select_type'>Select Type</option>");
+			html.push(defaultDirectionsTypeHTML()); 
+			html.push("</select>");
 		}
 	}
 	$("#directions_to").html(html.join(""));
@@ -617,6 +641,10 @@ function directionsToTypeChange() {
 
 function findPathSelected() {
 	if(directionsParamsValid()) {
+		$("#change_building_floor_popover").attr("disabled", true);
+		$("#get_directions_button").css("display", "none");
+		$("#exit_directions_button").css("display", "block");
+		
 		var handicap = $("#handicap_yes").is(":checked");
 		showingPath = true;
 		var fromMarker;
@@ -682,7 +710,8 @@ function findPathSelected() {
 }
 
 function findPath(marker1ID, marker2ID, handicap) {
-	var start = new Date().getTime();
+	LOG.debug("Finding path from " + marker1ID + " to " + marker2ID + ". handicap: " + handicap);
+	var start = now();
 	var path;
 	if(handicap == null || !handicap) {
 		path = getShortestPath(nonHandicapGraph, marker1ID, marker2ID);
@@ -691,12 +720,6 @@ function findPath(marker1ID, marker2ID, handicap) {
 	}
 	directionsPathArray = path;
 	directionsPathArrayPosition = -1;
-	
-	$("#directions").css({width: $(window).width(), height: $("#navbar").height(), display: "table-cell"});
-	$("#directions_text").css({height: $("#navbar").height(), "line-height": $("#navbar").height() + "px"});
-	$("#directions_left").css({height: $("#navbar").height()});
-	$("#directions_right").css({height: $("#navbar").height()});
-	$("#navbar").css("display", "none");
 	
 	pathMap.forEach(function(pathString, path) {
 		path.element.stop();
@@ -707,6 +730,7 @@ function findPath(marker1ID, marker2ID, handicap) {
 		path.element.hide();
 	});
 	
+	var displayablePath = new buckets.Dictionary();
 	for (var i = 0, pathLength = path.length; i < pathLength; i++) {
 		if (i < path.length - 1) {
 			var pathObject = pathMap.get(path[i] + "<->" + path[i + 1]);
@@ -721,82 +745,171 @@ function findPath(marker1ID, marker2ID, handicap) {
 		}
 	}
 	
+	directionsPathArray = extractDirections(path);
+	
+	if($(window).width() <= 768) {
+		var height = $("#navbar").height() * 2;
+		$("#directions_display_mobile").css({width: $(window).width(), height: height, display: "table-cell"});
+		$("#directions_text").css({height: height, "line-height": height + "px"});
+		$("#directions_left").css({height: height});
+		$("#directions_right").css({height: height});
+		$("#navbar").css("display", "none");
+		$("#mobile_control_buttons").css("display", "none");
+		$("#mobile_directions_buttons").css("display", "block");
+	} else {
+		$("#directions_display_desktop").css({width: "25%", height: $("#raphael").height() - 10, display: "block"});
+		$("#directions_display_desktop").html("");
+		$("#directions_display_desktop").append('<ul id="directions_display_list" class="list-group"></ul>');
+		$("#directions_display_list").append('<li class="list-group-item">Directions</li>');
+		
+		for(var i = 0, len = directionsPathArray.length; i < len; i++) {
+			$("#directions_display_list").append('<li id="directions_step_'+i+'" class="list-group-item hover-color" onclick="showDirectionsForStep('+i+')">' + directionsPathArray[i].direction + '</li>');
+		}
+		$("#directions_step_0").addClass("selected_direction");	
+	}
+	
+	var allPathIds = [];
+	for(var i = 0, len = directionsPathArray.length; i < len; i++) {
+		var pathIds = directionsPathArray[i].pathIds;
+		for(var j = 0, l = pathIds.length; j < l; j++) {
+			allPathIds.push(pathIds[j]);
+		}
+	}
+	
+	zoomInOnPaths(allPathIds);
+	
 	showNextDirections();
 
-	LOG.trace("Took " + (new Date().getTime() - start) + " ms to find and show path from " + marker1ID + " to " + marker2ID);
+	LOG.trace("Took " + (now() - start) + " ms to find and show path from " + marker1ID + " to " + marker2ID);
+}
+
+function showDirectionsForStep(step) {
+	var pathArray = directionsPathArray;
+	var pathArrayPosition = directionsPathArrayPosition;
+	LOG.trace("Showing directions for step " + step + " of " + (pathArray.length-1));
+	if(step >= 0 && step < pathArray.length) {
+		if(pathArrayPosition >= 0) {
+			// Hide all showing paths
+			var pathObj = pathArray[pathArrayPosition];
+			var pathIds = pathObj.pathIds;
+			for(var i = 0, len = pathIds.length; i < len; i++) {
+				var currentDisplayedPath = pathMap.get(pathIds[i]);
+				var currentDisplayedPathElement = currentDisplayedPath.element;
+				currentDisplayedPathElement.attr({
+					fill: "black",
+					stroke: "black"
+				});
+			}
+		}
+		$("#directions_step_"+pathArrayPosition).removeClass("selected_direction");
+		
+		pathArrayPosition = step;
+		
+		var animation = Raphael.animation({
+			fill: "red",
+			stroke: "red"
+		}, 1000, "<>").repeat(Infinity);
+		
+		var pathObj = pathArray[pathArrayPosition];
+		var pathIds = pathObj.pathIds;
+		for(var i = 0, len = pathIds.length; i < len; i++) {
+			var newDisplayedPath = pathMap.get(pathIds[i]);
+			var newDisplayedPathElement = newDisplayedPath.element;
+			newDisplayedPathElement.attr({fill: "red", stroke: "red"});
+		}
+		
+		var floor = getFloorFromId(pathIds[0]);
+		if(floor != "" && floor != currentFloor) {
+			currentFloor = floor;
+			showShapesForCurrentBuildingAndFloor();
+			
+			var allPathIds = [];
+			for(var i = 0, len = directionsPathArray.length; i < len; i++) {
+				var pathIds = directionsPathArray[i].pathIds;
+				for(var j = 0, l = pathIds.length; j < l; j++) {
+					allPathIds.push(pathIds[j]);
+				}
+			}
+			
+			zoomInOnPaths(allPathIds);
+		}
+		
+		resizeToShowPaths(pathIds);
+
+		directionsPathArrayPosition = pathArrayPosition;
+		
+		$("#directions_step_"+pathArrayPosition).addClass("selected_direction");
+		
+		$("#directions_text").html(pathObj.direction);
+	}
 }
 
 function showNextDirections() {
+	var temp = directionsPathArrayPosition;
+	if(temp == null) {
+		temp = 0;
+	} else {
+		temp++;
+	}
+	showDirectionsForStep(temp);
+}
+
+function showPreviousDirections() {
+	var temp = directionsPathArrayPosition;
+	if(temp == null) {
+		temp = 0;
+	} else {
+		temp--;
+	}
+	showDirectionsForStep(temp);
+}
+
+function exitDirections() {
+	selectingFromOnMap = false;
+	if(selectedFromMarkerOnMap != null) {
+		selectedFromMarkerOnMap.hide();
+		selectedFromMarkerOnMap = null;
+	}
+	selectingToOnMap = false;
+	if(selectedToMarkerOnMap != null) {
+		selectedToMarkerOnMap.hide();
+		selectedToMarkerOnMap = null;
+	}
+	ignoreClick = false;
+	gettingDirections = false;
+	directionsHTML = null;
+	
 	var pathArray = directionsPathArray;
-	var pathArrayPosition = directionsPathArrayPosition;
-	if((pathArrayPosition+1) < pathArray.length-1) {
-		if(pathArrayPosition >= 0) {
-			var currentDisplayedPath = pathMap.get(pathArray[pathArrayPosition] + "<->" + pathArray[pathArrayPosition + 1]);
-			if(currentDisplayedPath == null) {
-				currentDisplayedPath = pathMap.get(pathArray[pathArrayPosition + 1] + "<->" + pathArray[pathArrayPosition]);
-			}
+	for(var i = 0, arrLen = pathArray.length; i < arrLen; i++) {
+		var pathIds = pathArray[i].pathIds;
+		for(var j = 0, idsLen = pathIds.length; j < idsLen; j++) {
+			var currentDisplayedPath = pathMap.get(pathIds[j]);
 			var currentDisplayedPathElement = currentDisplayedPath.element;
-			currentDisplayedPathElement.stop();
 			currentDisplayedPathElement.attr({
 				fill: "black",
 				stroke: "black"
 			});
+			currentDisplayedPathElement.hide();
 		}
-		pathArrayPosition++;
-		
-		var animation = Raphael.animation({
-			fill: "red",
-			stroke: "red"
-		}, 1000, "<>").repeat(Infinity);
-		
-		var newDisplayedPath = pathMap.get(pathArray[pathArrayPosition] + "<->" + pathArray[pathArrayPosition + 1]);
-		if(newDisplayedPath == null) {
-			newDisplayedPath = pathMap.get(pathArray[pathArrayPosition + 1] + "<->" + pathArray[pathArrayPosition]);
-		}
-		var newDisplayedPathElement = newDisplayedPath.element;
-//		newDisplayedPathElement.animate(animation);
-		newDisplayedPathElement.attr({fill: "red", stroke: "red"});
-
-		directionsPathArrayPosition = pathArrayPosition;
-		
-		$("#directions_text").html(pathArray[pathArrayPosition] + " -> " + pathArray[pathArrayPosition + 1]);
 	}
-}
-
-function showPreviousDirections() {
-	var pathArray = directionsPathArray;
-	var pathArrayPosition = directionsPathArrayPosition;
-	if(pathArrayPosition > 0) {
-		var currentDisplayedPath = pathMap.get(pathArray[pathArrayPosition] + "<->" + pathArray[pathArrayPosition + 1]);
-		if(currentDisplayedPath == null) {
-			currentDisplayedPath = pathMap.get(pathArray[pathArrayPosition + 1] + "<->" + pathArray[pathArrayPosition]);
-		}
-		var currentDisplayedPathElement = currentDisplayedPath.element;
-		currentDisplayedPathElement.stop();
-		currentDisplayedPathElement.attr({
-			fill: "black",
-			stroke: "black"
-		});
-		
-		pathArrayPosition--;
-		
-		var animation = Raphael.animation({
-			fill: "red",
-			stroke: "red"
-		}, 1000, "<>").repeat(Infinity);
-		
-		var newDisplayedPath = pathMap.get(pathArray[pathArrayPosition] + "<->" + pathArray[pathArrayPosition + 1]);
-		if(newDisplayedPath == null) {
-			newDisplayedPath = pathMap.get(pathArray[pathArrayPosition + 1] + "<->" + pathArray[pathArrayPosition]);
-		}
-		var newDisplayedPathElement = newDisplayedPath.element;
-//		newDisplayedPathElement.animate(animation);
-		newDisplayedPathElement.attr({fill: "red", stroke: "red"});
-
-		directionsPathArrayPosition = pathArrayPosition;
-		
-		$("#directions_text").html(pathArray[pathArrayPosition] + " -> " + pathArray[pathArrayPosition + 1]);
+	
+	directionsPathArray = null;
+	directionsPathArrayPosition = null;
+	
+	if($(window).width() <= 768) {
+		$("#mobile_directions_buttons").css("display", "none");
+		$("#mobile_control_buttons").css("display", "block");
+		$("#navbar").css("display", "block");
+		$("#directions_display_mobile").css("display", "none");
+		$("#directions_text").html("");
 	}
+	
+	resetRaphaelSize();
+	
+	$("#change_building_floor_popover").attr("disabled", false);
+	$("#exit_directions_button").css("display", "none");
+	$("#get_directions_button").css("display", "block");
+	$("#directions_display_desktop").css("display", "none");
 }
 
 function setMarkerDragEventHandlers(marker) {
@@ -924,4 +1037,68 @@ function showRaphael() {
 	$("#loading").css("display", "none");
 	$("#shield").css("display", "none");
 	$("#raphael").css("display", "block");
+	if($(window).width() <= 768) {
+		$("#mobile_controls").css("display", "block");			
+	}
 }
+
+function resizeToShowPaths(pathIds) {
+	var upperLeftX = 999999;
+	var upperLeftY = 999999;
+	for(var i = 0, len = pathIds.length; i < len; i++) {
+		var path = pathMap.get(pathIds[i]);
+		path.element.toFront();
+		var bbox = Raphael.pathBBox(path.element.attrs.path);
+		if(bbox.x < upperLeftX) {
+			upperLeftX = bbox.x;
+		}
+		if(bbox.y < upperLeftY) {
+			upperLeftY = bbox.y;
+		}
+	}
+	
+	paperShiftX = upperLeftX - (paperWidth/2);
+	paperShiftY = upperLeftY - (paperHeight/2);
+
+	paper.setViewBox(paperShiftX, paperShiftY, paperWidth, paperHeight, true);
+}
+
+function zoomInOnPaths(pathIds) {
+	var lowerLeftY = -999999;
+	for(var i = 0, len = pathIds.length; i < len; i++) {
+		var path = pathMap.get(pathIds[i]);
+		var bbox = Raphael.pathBBox(path.element.attrs.path);
+		if(bbox.y2 > lowerLeftY) {
+			lowerLeftY = bbox.y2;
+		}
+	}
+	
+	var oldPaperWidth = paperWidth;
+	var xyRatio = oldPaperWidth/paperHeight;
+	var yDist = (lowerLeftY)-(paperShiftY+paperHeight);
+	paperWidth += xyRatio*yDist;
+	paperHeight += yDist;
+	
+	paperResizeRatio *= (paperWidth/oldPaperWidth);
+
+	paper.setViewBox(paperShiftX, paperShiftY, paperWidth, paperHeight, true);
+}
+
+function unselectFromOnMap() {
+	if(selectedFromMarkerOnMap != null) {
+		selectedFromMarkerOnMap.hide();
+		selectedFromMarkerOnMap = null;
+	}
+	
+	directionsFromTypeChange();
+}
+
+function unselectToOnMap() {
+	if(selectedToMarkerOnMap != null) {
+		selectedToMarkerOnMap.hide();
+		selectedToMarkerOnMap = null;
+	}
+	
+	directionsToTypeChange();
+}
+

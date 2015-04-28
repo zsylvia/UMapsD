@@ -1,3 +1,7 @@
+.navbar {
+	margin-bottom: 0px !important;
+}
+
 .navbar-default {
   background-color: #0a2871;
 }
@@ -57,13 +61,68 @@ text {
 	-webkit-user-select: none;
 }
 
+#exit_directions_button {
+	display: none;
+}
+
+.mobile_button {
+	background-color: #0a2871;
+	font-size: 30px;
+	height:60px;
+    width: 60px;
+    margin-bottom: 5px;
+    margin-right: 5px;
+    border-radius: 50%;
+    text-align: center;
+    border: 0;
+    outline: none !important;
+}
+
+.mobile_button:focus {
+	background-color: #0a2871;
+}
+
+#zoom_in {
+	margin-top: 5px;
+}
+
+#directions_display_desktop {
+    margin: 10px;
+    text-align: center;
+    border: 0;
+    outline: none !important;
+    position: fixed; 
+    float: right;
+    right: 0;
+    overflow: scroll;
+}
+
+#directions_display_mobile {
+	display: none;
+	background-color: #0a2871;
+	border-radius: 4px;
+	text-align: center;
+	position: relative;
+	word-wrap: break-word;
+}
+
+.selected_direction {
+	background-color: #0a2871 !important;
+	color: white !important;
+}
+
+.hover-color:hover {
+	background-color: #0a2871 !important;
+	color: white !important;
+}
+
 #view {
 	position: relative;
 }
 
 #shield {
-	background-color: "white";
-	position: "absolute";
+	background-color: white;
+	position: absolute;
 }
 
 #loading {

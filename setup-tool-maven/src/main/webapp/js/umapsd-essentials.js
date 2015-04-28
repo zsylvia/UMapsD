@@ -22,9 +22,9 @@ var bathroomMensMap = new buckets.Dictionary();
 var bathroomWomensMap = new buckets.Dictionary();
 var parkingLotMap = new buckets.Dictionary();
 
-var parkingLotShapesMap = new buckets.Dictionary();
-var dormShapesMap = new buckets.Dictionary();
-var pathShapesMap = new buckets.Dictionary();
+var parkingLotNameAndShapeMap = new buckets.Dictionary();
+var dormNameAndShapeMap = new buckets.Dictionary();
+var pathShapesList = new buckets.LinkedList();
 
 var markerSize = 5;
 var pathStrokeWidth = 4;
@@ -99,8 +99,9 @@ var pathMap = new buckets.Dictionary();
 var buildingShortToLongNameMap = new buckets.Dictionary();
 var buildingToFloorMap = new buckets.Dictionary();
 var buildingToFloorIdsMap = new buckets.Dictionary();
-var currentBuilding = "dion";
+var currentBuilding = GlobalStrings.ALL_BUILDINGS;
 var currentFloor = "1";
+var showingFloor = "-1";
 
 var paperResizeRatio = 1;
 var paperWidth;
@@ -118,8 +119,18 @@ var dictionaryLoaded = false;
 var mouseDown = false;
 var currX;
 var currY;
+var currX2;
+var currY2;
 
 var hasGraph = false;
+
+var paperViewBoxMap;
+
+var showingShapesAndNamesSet;
+
+var mouseMoveCount = 0;
+
+var touchDistance = 0;
 
 function Connection(marker, distance) {
 	this.marker = marker;
@@ -131,55 +142,78 @@ function Connection(marker, distance) {
 }
 
 $(document).ready(function() {
-	$("#view").css("width", $(window).width());
-	$("#view").css("height", $(window).height() - $("#body").height());
-	
+	$("#view").css("height", $(window).height() - $("#navbar").outerHeight(true) - 5);
+	$("#view").css("width", $("#navbar").width());
 	setTimeout(function(){
+		
 		var start = new Date().getTime();
 
 		$(raphaelDivJQuery).css("width", $("#view").width());
 		$(raphaelDivJQuery).css("height", $("#view").height());
 
-		paper = new ScaleRaphael(raphaelDiv, $(raphaelDivJQuery).width(), $(raphaelDivJQuery).height());
+		paper = new Raphael(raphaelDiv, $(raphaelDivJQuery).width(), $(raphaelDivJQuery).height());
 
-		paper.setStart();
-
-		var shapesCount = 0;
-
-		paper.setFinish();
+		showingShapesAndNamesSet = paper.set();
 
 		paperWidth = paper.width;
 		paperHeight = paper.height;
 		
 		raphaelSetup();
-
+		
 		$(window).resize(function() {
-			$(raphaelDivJQuery).css("width", $(window).width());
-			$(raphaelDivJQuery).css("height", $(window).height() - $("#body").height());
-			paper.changeSize($(raphaelDivJQuery).width(), $(raphaelDivJQuery).height(), false, false);
+			$("#view").css("height", $(window).height() - $("#navbar").outerHeight(true) - 5);
+			$("#view").css("width", $("#navbar").width());
+			$(raphaelDivJQuery).css("height", $("#view").height());
+			$(raphaelDivJQuery).css("width", $("#view").width());
+			if($(window).width() <= 768) {
+				$("#mobile_controls").css("display", "block");			
+			} else {
+				$("#mobile_controls").css("display", "none");
+			}
+			paper.setSize($(raphaelDivJQuery).width(), $(raphaelDivJQuery).height());
 		});
-
+		
 		document.getElementById(raphaelDiv).addEventListener("touchstart", function(event) {
 			if (event.preventDefault) event.preventDefault();
 			currX = event.touches[0].pageX;
 			currY = event.touches[0].pageY;
+			if(event.touches[1] != null) {
+				currX2 = event.touches[1].pageX;
+				currY2 = event.touches[1].pageY;
+				touchDistance = dist(currX, currY, currX2, currY2);
+			}
 			mouseDown = true;
 		}, false);
 		document.getElementById(raphaelDiv).addEventListener("touchmove", function(event) {
 			if (event.preventDefault) event.preventDefault();
-			if (mouseDown && !mouseOnMarker) {
+			if (mouseDown && !mouseOnMarker && (mouseMoveCount % 10 == 0)) {
 				if (event.preventDefault) {
 					event.preventDefault();
 				}
-				paperShiftX = Math.floor(paperShiftX + (currX - event.touches[0].pageX) * paperResizeRatio);
-				paperShiftY = Math.floor(paperShiftY + (currY - event.touches[0].pageY) * paperResizeRatio);
-				currX = event.touches[0].pageX;
-				currY = event.touches[0].pageY;
+				if(event.touches.length == 2) {
+					currX = event.touches[0].pageX;
+					currY = event.touches[0].pageY;
+					currX2 = event.touches[1].pageX;
+					currY2 = event.touches[1].pageY;
+					var newTouchDistance = dist(currX, currY, currX2, currY2);
+					if(newTouchDistance > touchDistance) {
+						zoomIn();
+					} else {
+						zoomOut();
+					}
+					touchDistance = newTouchDistance;
+				} else {
+					paperShiftX = Math.floor(paperShiftX + (currX - event.touches[0].pageX) * paperResizeRatio);
+					paperShiftY = Math.floor(paperShiftY + (currY - event.touches[0].pageY) * paperResizeRatio);
+					currX = event.touches[0].pageX;
+					currY = event.touches[0].pageY;
+				}
 
 				paper.setViewBox(paperShiftX, paperShiftY, paperWidth, paperHeight, false);
 
 				draggingEverythingIgnoreClick = true;
 			}
+			mouseMoveCount++;
 		}, false);
 		document.getElementById(raphaelDiv).addEventListener("touchend", function(event) {
 			if (event.preventDefault) event.preventDefault();
@@ -211,7 +245,7 @@ $(document).ready(function() {
 					console.error(err.stack);
 				}
 			}
-			if (mouseDown && !ignoreEvent) {
+			if (mouseDown && !ignoreEvent && (mouseMoveCount % 2 == 0)) {
 				var ev = event;
 				if (ev.preventDefault) {
 					ev.preventDefault();
@@ -247,6 +281,8 @@ $(document).ready(function() {
 
 				draggingEverythingIgnoreClick = true;
 			}
+			
+			mouseMoveCount++;
 		});
 		$(raphaelDivJQuery).mouseup(function(event) {
 			mouseDown = false;
@@ -315,8 +351,10 @@ function raphaelSetup() {
 		var centerX = bbox.x + (bbox.width / 2);
 		var centerY = bbox.y + (bbox.height / 2);
 
-		paper.text(centerX, centerY, shape.full_id).attr({"font-size": 10}).toFront();
+		var name = paper.text(centerX, centerY, shape.full_id).attr({"font-size": 10}).toFront();
 		path.attr({fill: "#fddcac", "fill-opacity": .75, stroke: "white", "stroke-opacity": 1});
+		
+		parkingLotNameAndShapeMap.set(shape.full_id, {name: name, shape: path});
 	}
 	
 	var dorms = dictionary.dorms;
@@ -327,8 +365,10 @@ function raphaelSetup() {
 		var centerX = bbox.x + (bbox.width / 2);
 		var centerY = bbox.y + (bbox.height / 2);
 
-		paper.text(centerX, centerY, shape.full_id).attr({"font-size": 10}).toFront();
+		var name = paper.text(centerX, centerY, shape.full_id).attr({"font-size": 10}).toFront();
 		path.attr({fill: "#fddcac", "fill-opacity": .75, stroke: "white", "stroke-opacity": 1});
+		
+		dormNameAndShapeMap.set(shape.full_id, {name: name, shape: path});
 	}
 	
 //	var misc = dictionary.misc;
@@ -354,6 +394,7 @@ function raphaelSetup() {
 //		newPaths.push(p);
 		var path = paper.path(shape.path);
 		path.attr({fill: "black", stroke: "black"});
+		pathShapesList.add(path);
 	}
 //	dictionary.paths = newPaths;
 
@@ -401,10 +442,15 @@ function loadShapesForBuildingAndFloor(building, floor) {
 	}
 	LOG.debug("Loading shapes for building " + building + " and floor " + floor);
 	var buildings = dictionary.buildings;
+	var nd = nameDictionary;
+	var buildings_nd = nd.buildings;
+	var parkingLots_nd = nd.parkingLots;
+	var dorms_nd = nd.dorms;
 	var pathCreateTime = 0;
 	var textCreateTime = 0;
 	var findCenterTime = 0;
-	var loopStart = new Date().getTime();
+	var loopStart = now();
+	var p = paper;
 	for (var i = 0, bldgLength = buildings.length; i < bldgLength; i++) {
 		var bldg = buildings[i];
 		buildingShortToLongNameMap.set(bldg.short_id, bldg.full_id);
@@ -436,32 +482,49 @@ function loadShapesForBuildingAndFloor(building, floor) {
 					}
 
 					var shapes = flr.shapes;
+					var path;
+					var id = GlobalStrings.ID;
 					for (var k = 0, shapesLength = shapes.length; k < shapesLength; k++) {
 						var shape = shapes[k];
-						if (shape.path != "") {
-							var s = new Date().getTime();
-							if(shape.id == "outline") {
-								var path = paper.path(shape.path).data(GlobalStrings.ID, shape.id)
-								.attr({fill: "gray", "fill-opacity": .1, stroke: "white", "stroke-opacity": 1}).toBack();
+						var shapeId = shape.id;
+						var shapePath = shape.path;
+						if (shapePath != "") {
+							var s = now();
+							if(shapeId== "outline") {
+								path = p.path(shapePath).data(id, shapeId)
+								.attr({fill: "gray", "fill-opacity": .1, stroke: "white"}).toBack();
 							} else {
-								var path = paper.path(shape.path).data(GlobalStrings.ID, shape.id)
-								.attr({fill: "#fddcac", "fill-opacity": .75, stroke: "white", "stroke-opacity": 1});
+								path = p.path(shapePath).data(id, shapeId)
+								.attr({fill: "#fddcac", "fill-opacity": .75, stroke: "white"});
 							}
-							pathCreateTime += new Date().getTime()-s;
-							
-							var s = now();
-							var bbox = Raphael.pathBBox(shape.path);
-							var centerX = bbox.x + (bbox.width / 2);
-							var centerY = bbox.y + (bbox.height / 2);
-							findCenterTime += now()-s;
-							
-							var s = now();
-							nameList.add(paper.text(centerX, centerY, findTypeSpecificId(shape.id)).attr({"font-size": 10}));
-							textCreateTime += now() - s;
+							pathCreateTime += now()-s;
 
 							shapeList.add(path);
 						}
 					}
+					
+					var s = now();
+					var bldg_id = bldg.short_id;
+					var flr_id = flr.id;
+					var floors_nd;
+					var names_nd;
+					for(var x = 0, len = buildings_nd.length; x < len; x++) {
+						if(buildings_nd[x].id == bldg_id) {
+							floors_nd = buildings_nd[x].floors;
+							break;
+						}
+					}
+					for(var x = 0, len = floors_nd.length; x < len; x++) {
+						if(floors_nd[x].id == flr_id) {
+							names_nd = floors_nd[x].names;
+							break;
+						}
+					}
+					for(var x = 0, len = names_nd.length; x < len; x++) {
+						var name = names_nd[x];
+						nameList.add(p.text(name.x, name.y, name.id));
+					}
+					textCreateTime += now() - s;
 					
 					shapeListAndNameMap.set("shapes", shapeList);
 					shapeListAndNameMap.set("names", nameList);
@@ -473,65 +536,83 @@ function loadShapesForBuildingAndFloor(building, floor) {
 	}
 	
 	LOG.trace("Took " + pathCreateTime + " ms to create all shapes");
-	LOG.trace("Took " + findCenterTime + " ms to find centers");
 	LOG.trace("Took " + textCreateTime + " ms to create all text");
 	LOG.trace("Took " + (now()-loopStart) + " ms to finish the loop");
 	
-	LOG.trace("Took " + (new Date().getTime()-start) + " ms to load shapes for " + building + " floor " + floor);
+	LOG.trace("Took " + (now()-start) + " ms to load shapes for " + building + " floor " + floor);
 }
 
 function showShapesForBuildingAndFloor(building, floor) {
-	loadShapesForBuildingAndFloor(building, floor);
+	loadShapesForBuildingAndFloor(GlobalStrings.ALL_BUILDINGS, floor);
 	var start = now();
 	LOG.debug("Showing shapes for building " + building + " and floor " + floor);
 	var paperX = 999999;
 	var paperY = 999999;
-	var bboxTime = 0;
-	var showAllBuildings = (building == GlobalStrings.ALL_BUILDINGS);
-	buildingToFloorMap.forEach(function(bldg, floorToShapeListMap) {
-		floorToShapeListMap.forEach(function(flr, shapeListAndNameMap) {
-			var shapeList = shapeListAndNameMap.get("shapes");
-			var nameList = shapeListAndNameMap.get("names");
-			if((showAllBuildings || building == bldg) && floor == flr) {
+	
+	if(floor != showingFloor) {
+		var shapeAndNameSet = paper.set();
+		showingShapesAndNamesSet.hide();
+		
+		buildingToFloorMap.forEach(function(bldg, floorToShapeListMap) {
+			var shapeListAndNameMap = floorToShapeListMap.get(floor);
+			if(shapeListAndNameMap != null) {
+				var shapeList = shapeListAndNameMap.get("shapes");
+				var nameList = shapeListAndNameMap.get("names");
 				shapeList.forEach(function(shape) {
-					shape.show();
-					var s = now();
-					var bbox = shape.getBBox();
-					if (bbox.x < paperX) {
-						paperX = bbox.x;
-					}
-					if (bbox.y < paperY) {
-						paperY = bbox.y;
-					}
-					bboxTime += (now()-s);
+					shapeAndNameSet.push(shape.show());
 				});
 				
 				nameList.forEach(function(name) {
-					name.show();
-				});
-			} else {
-				shapeList.forEach(function(shape) {
-					shape.hide();
-				});
-				
-				nameList.forEach(function(name) {
-					name.hide();
+					shapeAndNameSet.push(name.show().toFront());
 				});
 			}
 		});
-	});
-
-	paperShiftX = Math.floor(paperX);
-	paperShiftY = Math.floor(paperY);
+		
+		if(floor == "1") {
+			// show parking lots, dorms, and paths
+			parkingLotNameAndShapeMap.forEach(function(id, nameShape) {
+				shapeAndNameSet.push(nameShape.name.show());
+				shapeAndNameSet.push(nameShape.shape.show());
+			});
+			dormNameAndShapeMap.forEach(function(id, nameShape) {
+				shapeAndNameSet.push(nameShape.name.show());
+				shapeAndNameSet.push(nameShape.shape.show());
+			});
+			pathShapesList.forEach(function(path){
+				shapeAndNameSet.push(path.show());
+			});
+		}
+		
+		showingShapesAndNamesSet = shapeAndNameSet;
+	}
+	
+	var buildings = paperShiftMap.buildings;
+	for(var i = 0, bLen = buildings.length; i < bLen; i++) {
+		if(buildings[i].id == building) {
+			var floors = buildings[i].floors;
+			for(var j = 0, fLen = floors.length; j < fLen; j++) {
+				var flr = floors[j];
+				if(flr.id == floor) {
+					paperShiftX = flr.x;
+					paperShiftY = flr.y;
+					break;
+				}
+			}
+			break;
+		}
+	}
+	
 	paper.setViewBox(paperShiftX, paperShiftY, paperWidth, paperHeight, false);
 	
-	LOG.trace("Took " + (new Date().getTime()-start) + " ms to show shapes for " + building + " floor " + floor + ". bbox time = " + bboxTime);
+	LOG.trace("Took " + (now()-start) + " ms to show shapes for " + building + " floor " + floor);
 	
 	if(hasGraph) {
 		showMarkersForCurrentBuildingAndFloor();
 	}
 	
 	resizeToFitShapesForBuildingAndFloor(building, floor);
+	
+	showingFloor = floor;
 }
 
 function showShapesForCurrentBuildingAndFloor() {
@@ -740,6 +821,7 @@ function loadMarkersForBuildingAndFloor(building, floor) {
 		allMarkers.forEach(function(markerMap){
 			markerMap.forEach(function(markerId, marker) {
 				if(!getMarkerMapForType(marker.data(GlobalStrings.TYPE)).containsKey(marker.data(GlobalStrings.ID))) {
+					LOG.trace("Loading marker " + marker.data(GlobalStrings.ID));
 //					if (marker.data(GlobalStrings.TYPE) == GlobalStrings.ROOM || marker.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_MENS || marker.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_WOMENS) {
 //						buildingToFloorMap.get(marker.data(GlobalStrings.BUILDING)).get(marker.data(GlobalStrings.FLOOR)).get("shapes").forEach(function(element) {
 //							var show = element.isVisible();
@@ -1098,36 +1180,23 @@ function dist(point1X, point1Y, point2X, point2Y) {
 }
 
 function resizeToFitShapesForBuildingAndFloor(building, floor) {
-	var start = new Date().getTime();
-	var lowerLeftX = 999999;
-	var lowerLeftY = -999999;		
-	if(building == GlobalStrings.ALL_BUILDINGS) {
-		buildingToFloorMap.forEach(function(building, floorToShapeListAndNameMap) {
-			var shapeListAndNameMap = floorToShapeListAndNameMap.get(floor);
-			if(shapeListAndNameMap != null) {
-				shapeListAndNameMap.get("shapes").forEach(function(shape){
-					var bbox = shape.getBBox();
-					if (bbox.x < lowerLeftX) {
-						lowerLeftX = bbox.x;
-					}
-					if (bbox.y2 > lowerLeftY) {
-						lowerLeftY = bbox.y2;
-					}
-				});
+	var start = now();
+	var lowerLeftY;
+	var buildings = resizeMap.buildings;
+	for(var i = 0, blen = buildings.length; i < blen; i++) {
+		var bldg = buildings[i];
+		if(bldg.id == building) {
+			var floors = bldg.floors;
+			for(var j = 0, flen = floors.length; j < flen; j++) {
+				var flr = floors[j];
+				if(flr.id == floor) {
+					lowerLeftY = flr.y;
+					break;
+				}
 			}
-		});
-	} else {
-		buildingToFloorMap.get(building).get(floor).get("shapes").forEach(function(shape){
-			var bbox = shape.getBBox();
-			if (bbox.x < lowerLeftX) {
-				lowerLeftX = bbox.x;
-			}
-			if (bbox.y2 > lowerLeftY) {
-				lowerLeftY = bbox.y2;
-			}
-		});
+			break;
+		}
 	}
-	
 	var oldPaperWidth = paperWidth;
 	var xyRatio = oldPaperWidth/paperHeight;
 	var yDist = lowerLeftY-(paperShiftY+paperHeight);
@@ -1138,7 +1207,7 @@ function resizeToFitShapesForBuildingAndFloor(building, floor) {
 
 	paper.setViewBox(paperShiftX, paperShiftY, paperWidth, paperHeight, true);
 	
-	LOG.trace("Took " + (new Date().getTime()-start) + " ms to resize to fit shapes for " + building + " floor " + floor);
+	LOG.trace("Took " + (now()-start) + " ms to resize to fit shapes for " + building + " floor " + floor);
 }
 
 function zoomIn(zoomFactor) {
@@ -1403,7 +1472,7 @@ function findTypeSpecificId(id, type) {
 		} else if(type == GlobalStrings.BATHROOM_WOMENS) {
 			return GlobalStrings.BATHROOM_WOMENS_DISPLAY;
 		} else if(type == GlobalStrings.PARKING_LOT) {
-			return GlobalStrings.PARKING_LOT + getParkingLotFromId(id);
+			return getParkingLotFromId(id);
 		}
 	}
 }
@@ -1443,4 +1512,38 @@ function waitAndRun(wait, condition, func, params) {
 		}
 		
 	}, wait);
+}
+
+function hashCode(str) {
+	var start = now();
+	var hash = 0;
+	if(str.length == 0) return hash;
+	for(var i = 0, len = str.length; i < len; i++) {
+		var char = str.charCodeAt(i);
+		hash = ((hash<<5)-hash)+char;
+		hash = hash & hash;
+	}
+	console.log("Took " + (now()-start) + " ms to get hash of " + str + ": " + hash);
+	return hash;
+}
+
+function getDisplayNameFromId(id) {
+	var type = getTypeFromId(id);
+	if(type == GlobalStrings.ROOM) {
+		return buildingShortToLongNameMap.get(getBuildingFromId(id)) + " " + getRoomFromRoomId(id);
+	} else if(type == GlobalStrings.BATHROOM_MENS) {
+		return GlobalStrings.BATHROOM_MENS_DISPLAY;
+	} else if(type == GlobalStrings.BATHROOM_WOMENS) {
+		return GlobalStrings.BATHROOM_WOMENS_DISPLAY;
+	} else if(type == GlobalStrings.PARKING_LOT) {
+		return GlobalStrings.PARKING_LOT_DISPLAY + " " + getParkingLotFromId(id);
+	} else {
+		return id;
+	}
+}
+
+function resetRaphaelSize() {
+	$(raphaelDivJQuery).css("width", $("#view").width());
+	$(raphaelDivJQuery).css("height", $("#view").height());
+	paper.setSize($(raphaelDivJQuery).width(), $(raphaelDivJQuery).height());
 }
