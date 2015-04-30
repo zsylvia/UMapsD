@@ -35,18 +35,25 @@ public class DictionaryUploadServlet extends HttpServlet {
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		response.setContentType("text/plain");
 		response.setStatus(HttpServletResponse.SC_OK);
-		String dictionary = request.getParameter("dictionary");
 		String nameChangeMap = request.getParameter("nameChangeMap");
 		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
 		long sessionTime = Long.valueOf(request.getParameter("sessionTime"));
-		String dictionaryJson = convertDictionaryToJson(dictionary);
+		String dictionaryJson = "var dictionary=" + request.getParameter("dictionary") + ";";
+		String productionDictionaryJson = "var dictionary=" + request.getParameter("productionDictionary") + ";";
 		String nameChangeMapJson = convertNameChangeMapToJson(nameChangeMap);
+		String paperShiftMapJson = "var paperShiftMap=" + request.getParameter("paperShiftMap") + ";";
+		String nameDictionaryJson = "var nameDictionary=" + request.getParameter("nameDictionary") + ";";
+		String resizeMapJson = "var resizeMap=" + request.getParameter("resizeMap") + ";";
 		
 		try {
 			File dictionaryDir = new File(getServletContext().getRealPath("/dictionary"));
 			if(dictionaryDir.exists()) {
 				boolean saveDictionaryFile = false;
+				boolean saveProductionDictionaryFile = false;
 				boolean saveNameChangeMapFile = false;
+				boolean savePaperShiftMapFile = false;
+				boolean saveNameDictionaryFile = false;
+				boolean saveResizeMapFile = false;
 				File oldDictionary = new File(dictionaryDir, "dictionary.js");
 				if(oldDictionary.exists()) {
 					System.out.println("Old dictionary exists");
@@ -60,6 +67,7 @@ public class DictionaryUploadServlet extends HttpServlet {
 					}
 				} else {
 					System.out.println("Old dictionary file does not exist");
+					saveDictionaryFile = true;
 				}
 				if(saveDictionaryFile) {
 					File newDictionary = new File(dictionaryDir, "dictionary.js");
@@ -73,6 +81,33 @@ public class DictionaryUploadServlet extends HttpServlet {
 					System.out.println("Saved dictionary file");
 				}
 				
+				File oldProductionDictionary = new File(dictionaryDir, "productionDictionary.js");
+				if(oldProductionDictionary.exists()) {
+					System.out.println("Old productionDictionary exists");
+					if(!FileUtils.readFileToString(oldProductionDictionary).equals(productionDictionaryJson)) {
+						saveProductionDictionaryFile = true;
+						FileUtils.moveFile(oldProductionDictionary, new File(dictionaryDir, "productionDictionary.js."+format.format(new Date(sessionTime))));
+						System.out.println("Moved old productionDictionary to productionDictionary.js." + format.format(new Date(sessionTime)));
+					} else {
+						// No changes were made
+						System.out.println("No changes have been made to productionDictionary");
+					}
+				} else {
+					System.out.println("Old productionDictionary file does not exist");
+					saveProductionDictionaryFile = true;
+				}
+				if(saveProductionDictionaryFile) {
+					File newProductionDictionary = new File(dictionaryDir, "productionDictionary.js");
+					if(!newProductionDictionary.exists()) {
+						newProductionDictionary.createNewFile();
+						
+						System.out.println("Created new productionDictionary file");
+					}
+					FileUtils.writeStringToFile(newProductionDictionary, productionDictionaryJson, false);
+					
+					System.out.println("Saved productionDictionary file");
+				}
+				
 				File oldNameChangeMapFile = new File(dictionaryDir, "nameChangeMap.js");
 				if(oldNameChangeMapFile.exists()) {
 					System.out.println("Old name change map exists");
@@ -84,19 +119,101 @@ public class DictionaryUploadServlet extends HttpServlet {
 						// No changes were made
 						System.out.println("No changes have been made to name change map");
 					}
-					if(saveNameChangeMapFile) {
-						File newNameChangeMapFile = new File(dictionaryDir, "nameChangeMap.js");
-						if(!newNameChangeMapFile.exists()) {
-							newNameChangeMapFile.createNewFile();
-							
-							System.out.println("Created new name change map");
-						}
-						FileUtils.writeStringToFile(newNameChangeMapFile, nameChangeMapJson, false);
-						
-						System.out.println("Saved name change map");
-					}
 				} else {
 					System.out.println("Old name change map does not exist");
+					saveNameChangeMapFile = true;
+				}
+				if(saveNameChangeMapFile) {
+					File newNameChangeMapFile = new File(dictionaryDir, "nameChangeMap.js");
+					if(!newNameChangeMapFile.exists()) {
+						newNameChangeMapFile.createNewFile();
+						
+						System.out.println("Created new name change map");
+					}
+					FileUtils.writeStringToFile(newNameChangeMapFile, nameChangeMapJson, false);
+					
+					System.out.println("Saved name change map");
+				}
+				
+				File oldPaperShiftMap = new File(dictionaryDir, "paperShiftMap.js");
+				if(oldPaperShiftMap.exists()) {
+					System.out.println("Old paperShiftMap exists");
+					if(!FileUtils.readFileToString(oldPaperShiftMap).equals(paperShiftMapJson)) {
+						savePaperShiftMapFile = true;
+						FileUtils.moveFile(oldPaperShiftMap, new File(dictionaryDir, "paperShiftMap.js."+format.format(new Date(sessionTime))));
+						System.out.println("Moved old paperShiftMap to paperShiftMap.js." + format.format(new Date(sessionTime)));
+					} else {
+						// No changes were made
+						System.out.println("No changes have been made to paperShiftMap");
+					}
+				} else {
+					System.out.println("Old paperShiftMap file does not exist");
+					savePaperShiftMapFile = true;
+				}
+				if(savePaperShiftMapFile) {
+					File newPaperShiftMap = new File(dictionaryDir, "paperShiftMap.js");
+					if(!newPaperShiftMap.exists()) {
+						newPaperShiftMap.createNewFile();
+						
+						System.out.println("Created new paperShiftMap file");
+					}
+					FileUtils.writeStringToFile(newPaperShiftMap, paperShiftMapJson, false);
+					
+					System.out.println("Saved paperShiftMap file");
+				}
+				
+				File oldNameDictionary = new File(dictionaryDir, "nameDictionary.js");
+				if(oldNameDictionary.exists()) {
+					System.out.println("Old nameDictionary exists");
+					if(!FileUtils.readFileToString(oldNameDictionary).equals(nameDictionaryJson)) {
+						saveNameDictionaryFile = true;
+						FileUtils.moveFile(oldNameDictionary, new File(dictionaryDir, "nameDictionary.js."+format.format(new Date(sessionTime))));
+						System.out.println("Moved old nameDictionary to nameDictionary.js." + format.format(new Date(sessionTime)));
+					} else {
+						// No changes were made
+						System.out.println("No changes have been made to nameDictionary");
+					}
+				} else {
+					System.out.println("Old nameDictionary file does not exist");
+					saveNameDictionaryFile = true;
+				}
+				if(saveNameDictionaryFile) {
+					File newNameDictionary = new File(dictionaryDir, "nameDictionary.js");
+					if(!newNameDictionary.exists()) {
+						newNameDictionary.createNewFile();
+						
+						System.out.println("Created new nameDictionary file");
+					}
+					FileUtils.writeStringToFile(newNameDictionary, nameDictionaryJson, false);
+					
+					System.out.println("Saved nameDictionary file");
+				}
+				
+				File oldResizeMap = new File(dictionaryDir, "resizeMap.js");
+				if(oldResizeMap.exists()) {
+					System.out.println("Old resizeMap exists");
+					if(!FileUtils.readFileToString(oldResizeMap).equals(resizeMapJson)) {
+						saveResizeMapFile = true;
+						FileUtils.moveFile(oldResizeMap, new File(dictionaryDir, "resizeMap.js."+format.format(new Date(sessionTime))));
+						System.out.println("Moved old resizeMap to resizeMap.js." + format.format(new Date(sessionTime)));
+					} else {
+						// No changes were made
+						System.out.println("No changes have been made to resizeMap");
+					}
+				} else {
+					System.out.println("Old resizeMap file does not exist");
+					saveResizeMapFile = true;
+				}
+				if(saveResizeMapFile) {
+					File newResizeMap = new File(dictionaryDir, "resizeMap.js");
+					if(!newResizeMap.exists()) {
+						newResizeMap.createNewFile();
+						
+						System.out.println("Created new resizeMap file");
+					}
+					FileUtils.writeStringToFile(newResizeMap, resizeMapJson, false);
+					
+					System.out.println("Saved resizeMap file");
 				}
 			}
 		} catch (IOException e) {

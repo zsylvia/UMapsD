@@ -1519,30 +1519,39 @@ function generateGraph() {
 		markerMap.forEach(function(markerId, marker) {
 			var nonHandicapConnectionString = [];
 			var handicapConnectionString = [];
-			var firstConnection = true;
 
 			var markerConnectionSet = typeToConnectionMap.get(marker.data(GlobalStrings.TYPE)).get(marker);
+			var addedHandicapConnectionLastPass = false;
+			var addedNonHandicapConnectionLastPass = false;
 			if(markerConnectionSet != null) {
 				markerConnectionSet.forEach(function(connection) {
-					if (firstConnection) {
-						firstConnection = false;
-					} else {
-						nonHandicapConnectionString.push(", ");
+					if (addedHandicapConnectionLastPass) {
 						handicapConnectionString.push(", ");
+						addedHandicapConnectionLastPass = false;
+					}
+					if(addedNonHandicapConnectionLastPass) {
+						nonHandicapConnectionString.push(", ");
+						addedNonHandicapConnectionLastPass = false;
 					}
 
-					if (marker.data(GlobalStrings.TYPE) == GlobalStrings.ROOM || connection.marker.data(GlobalStrings.TYPE) == GlobalStrings.ROOM) {
+					if(marker.data(GlobalStrings.TYPE) == GlobalStrings.STAIR || connection.marker.data(GlobalStrings.TYPE) == GlobalStrings.STAIR) {
+						nonHandicapConnectionString.push(connection.marker.data(GlobalStrings.ID) + ": " + connection.distance);
+//						handicapConnectionString.push(connection.marker.data(GlobalStrings.ID) + ": " + (connection.distance * 5000));
+						addedNonHandicapConnectionLastPass = true;
+					} else if(marker.data(GlobalStrings.TYPE) == GlobalStrings.ELEVATOR || connection.marker.data(GlobalStrings.TYPE) == GlobalStrings.ELEVATOR) {
+//						nonHandicapConnectionString.push(connection.marker.data(GlobalStrings.ID) + ": " + (connection.distance * 5000));
+						handicapConnectionString.push(connection.marker.data(GlobalStrings.ID) + ": " + connection.distance);
+						addedHandicapConnectionLastPass = true;
+					} else if (marker.data(GlobalStrings.TYPE) == GlobalStrings.ROOM || connection.marker.data(GlobalStrings.TYPE) == GlobalStrings.ROOM) {
 						nonHandicapConnectionString.push(connection.marker.data(GlobalStrings.ID) + ": " + (connection.distance * 5));
 						handicapConnectionString.push(connection.marker.data(GlobalStrings.ID) + ": " + (connection.distance * 5));
-					} else if(marker.data(GlobalStrings.TYPE) == GlobalStrings.STAIRS) {
-						nonHandicapConnectionString.push(connection.marker.data(GlobalStrings.ID) + ": " + connection.distance);
-						handicapConnectionString.push(connection.marker.data(GlobalStrings.ID) + ": " + (connection.distance * 5000));
-					} else if(marker.data(GlobalStrings.TYPE) == GlobalStrings.ELEVATOR) {
-						nonHandicapConnectionString.push(connection.marker.data(GlobalStrings.ID) + ": " + (connection.distance * 5000));
-						handicapConnectionString.push(connection.marker.data(GlobalStrings.ID) + ": " + connection.distance);
+						addedNonHandicapConnectionLastPass = true;
+						addedHandicapConnectionLastPass = true;
 					} else {
 						nonHandicapConnectionString.push(connection.marker.data(GlobalStrings.ID) + ": " + connection.distance);
 						handicapConnectionString.push(connection.marker.data(GlobalStrings.ID) + ": " + connection.distance);
+						addedNonHandicapConnectionLastPass = true;
+						addedHandicapConnectionLastPass = true;
 					}
 				});
 
@@ -1567,6 +1576,29 @@ function generateGraph() {
 	
 	
 //	var svg = paper.toSVG()
+//	allMarkers.forEach(function(markerMap) {
+//		markerMap.forEach(function(markerId, marker) {
+//			marker.remove();
+//		});
+//		markerMap.clear();
+//	});
+//	allMarkers.clear();
+//	buildingToFloorMap.forEach(function(bldg, floorToShapeListMap) {
+//		floorToShapeListMap.forEach(function(flr, shapeListAndNameMap) {
+//			var shapeList = shapeListAndNameMap.get("shapes");
+//			var nameList = shapeListAndNameMap.get("names");
+//			shapeList.forEach(function(shape){
+//				shape.remove();
+//			});
+//			shapeList.clear();
+//			nameList.forEach(function(name){
+//				name.remove();
+//			});
+//			nameList.clear();
+//		});
+//	});
+//	dictionary.buildings = [];
+//	paper.clear();
 //	paper = null;
 //	$("#raphael").html("");
 //	
@@ -1593,6 +1625,8 @@ function generateGraph() {
 	 	LOG.error("Save request failed. Printing graph below so all work is not lost. This can be copy and pasted into the graph.js file");
 	 	// Using console.log() so even if logging is shut off, the graph will be printed on an error
 	 	console.log(JSON.stringify(converted));
+	 	console.log(JSON.stringify(nonHandicapGraph.vertices));
+	 	console.log(JSON.stringify(handicapGraph.vertices));
 	 });
 	
 	return true;
@@ -1765,37 +1799,49 @@ function testForBadPaths() {
 			testingForBadPaths = true;
 			disableAllButtons();
 
-			var start = new Date().getTime();
+			var start = now();
 			var idToTestedIdSetMap = new buckets.Dictionary();
+			roomMap.forEach(function(markerId, markerFrom) {
+				idToTestedIdSetMap.set(markerId, new buckets.Set());
+			});
 			var badPaths = 0;
-			// Room to room: Check if number of rooms gone through is > 1
+			var testsPerMarker = 5;
+			var totalTests = testsPerMarker * roomMap.size();
+			LOG.debug("There will be " + totalTests + " total unique tests. " + testsPerMarker + " random tests per room marker");
+			var testCount = 0;
+			var markerIds = roomMap.keys();
 			roomMap.forEach(function(markerFromID, markerFrom) {
 				var testedIdSet = idToTestedIdSetMap.get(markerFromID);
-				if (testedIdSet == null) {
-					testedIdSet = new buckets.Set();
-				}
-				roomMap.forEach(function(markerToID, markerTo) {
-					if (!testedIdSet.contains(markerToID) && markerFromID != markerToID) {
-						var path = graph.shortestPath("" + markerFromID + "", "" + markerToID + "").concat(["" + markerFromID + ""]).reverse();
-						if (path.length == 1) {
-							LOG.error("There is no path from " + markerFromID + " to " + markerToID);
-							badPaths++;
+				for(var i = 0; i < testsPerMarker; i++) {
+					var markerToID = markerFromID;
+					var markerToTestedIdSet = idToTestedIdSetMap.get(markerToID);
+					var failuresToFindSuitableMarkerId = -1;
+					while(markerToID == markerFromID || testedIdSet.contains(markerToID) || markerToTestedIdSet.contains(markerFromID)) {
+						markerToID = markerIds[random(0, markerIds.length-1)];
+						markerToTestedIdSet = idToTestedIdSetMap.get(markerToID);
+						failuresToFindSuitableMarkerId++;
+						if(failuresToFindSuitableMarkerId >= 20) {
+							LOG.error("Failed " + failuresToFindSuitableMarkerId + " consecutive times to find a marker that hasn't been tested. " +
+									"Killing the test. This MIGHT not be an error if the number of markers is small compared to the number of tests " +
+									"per marker set");
+							break;
 						}
-
-						testedIdSet.add(markerToID);
-						var markerToTestedIdSet = idToTestedIdSetMap.get(markerToID);
-						if (markerToTestedIdSet == null) {
-							markerToTestedIdSet = new buckets.Set();
-						}
-						markerToTestedIdSet.add(markerFromID);
-						idToTestedIdSetMap.set(markerToID, markerToTestedIdSet);
+					}
+					
+					LOG.debug("Test " + ++testCount + " of " + totalTests + " -- " + markerFromID + " to " + markerToID);
+					var path = graph.shortestPath("" + markerFromID + "", "" + markerToID + "").concat(["" + markerFromID + ""]).reverse();
+					if (path.length == 1) {
+						LOG.error("There is no path from " + markerFromID + " to " + markerToID);
+						badPaths++;
 					}
 
-				});
-
+					testedIdSet.add(markerToID);
+					markerToTestedIdSet.add(markerFromID);
+					idToTestedIdSetMap.set(markerToID, markerToTestedIdSet);
+				}
 				idToTestedIdSetMap.set(markerFromID, testedIdSet);
 			});
-			LOG.trace("Testing for bad paths complete. Found " + badPaths + " bad paths. Took " + (new Date().getTime() - start) + " ms");
+			LOG.trace("Testing for bad paths complete. Found " + badPaths + " bad paths. Took " + (now() - start) + " ms");
 
 			$("#testing_dropdown").toggle();
 			$("#exit_testing_button").toggle();
@@ -1804,6 +1850,10 @@ function testForBadPaths() {
 			LOG.warn("Graph is null! Cannot test for bad paths");
 		}
 	}
+}
+
+function random(min,max) {
+    return Math.floor(Math.random()*(max-min+1)+min);
 }
 
 function formatMarker() {

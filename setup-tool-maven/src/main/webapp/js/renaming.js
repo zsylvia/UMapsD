@@ -14,6 +14,8 @@ var currentHoveredShape = null;
 
 var removeNamesMode = false;
 
+var currentBuilding = "dion";
+
 var shapeToNameMap = new buckets.Dictionary(function shapeToString(shape) {
 	return shape.data(GlobalStrings.ID);
 });
@@ -374,7 +376,8 @@ function saveRename(building, floor, oldId, newId) {
 
 // Building and floor shapes must be loaded first
 function renameShapesForBuildingAndFloor(building, floor) {
-	var start = new Date().getTime();
+	LOG.trace("Renaming shapes for " + building + " floor " + floor);
+	var start = now();
 	var shapeListAndNameMap = buildingToFloorMap.get(building).get(floor);
 	var floorChangeMap = null;
 	if(nameChangeMap.get(building) != null) {
@@ -406,6 +409,7 @@ function renameShapesForBuildingAndFloor(building, floor) {
 }
 
 function saveDictionaryFile() {
+	var start = now();
 	var changeMap = {buildings:[]};
 	var buildingCount = -1;
 	nameChangeMap.forEach(function(building, buildingChangeMap){
@@ -430,24 +434,197 @@ function saveDictionaryFile() {
 		});
 	});
 	
-	console.log(JSON.stringify(dictionary));
+	buildingToFloorIdsMap.forEach(function(building, floorList){
+		floorList.forEach(function(floor){
+			loadShapesForBuildingAndFloor(building, floor);
+		});
+	});
+	
+	var paperShiftMap = {buildings: []};
+	var nameDictionary = {buildings: [], parkingLots: [], dorms: []};
+	var resizeMap = {buildings: []};
+	buildingToFloorMap.forEach(function(bldg, floorToShapeListMap) {
+		var buildings_psm = paperShiftMap.buildings;
+		var buildings_nd = nameDictionary.buildings;
+		var buildings_rm = resizeMap.buildings;
+		buildings_psm[buildings_psm.length] = {id: bldg, floors: []};
+		buildings_nd[buildings_nd.length] = {id: bldg, floors: []};
+		buildings_rm[buildings_rm.length] = {id: bldg, floors: []};
+		floorToShapeListMap.forEach(function(flr, shapeListAndNameMap) {
+			var floors_psm = buildings_psm[buildings_psm.length-1].floors;
+			var floors_nd = buildings_nd[buildings_nd.length-1].floors;
+			var floors_rm = buildings_rm[buildings_rm.length-1].floors;
+			floors_psm[floors_psm.length] = {id: flr, x: 999999, y: 999999};
+			floors_nd[floors_nd.length] = {id: flr, names: []};
+			floors_rm[floors_rm.length] = {id: flr, y: -999999};
+			var shapeList = shapeListAndNameMap.get("shapes");
+			shapeList.forEach(function(shape) {
+				var bbox = Raphael.pathBBox(shape.attrs.path);
+				if (bbox.x < floors_psm[floors_psm.length-1].x) {
+					floors_psm[floors_psm.length-1].x = Math.floor(bbox.x);
+				}
+				if (bbox.y < floors_psm[floors_psm.length-1].y) {
+					floors_psm[floors_psm.length-1].y = Math.floor(bbox.y);
+				}
+				if(bbox.y2 > floors_rm[floors_rm.length-1].y) {
+					floors_rm[floors_rm.length-1].y = bbox.y2;
+				}
+			});
+			buildings_psm[buildings_psm.length-1].floors = floors_psm;
+			buildings_rm[buildings_rm.length-1].floors = floors_rm;
+			
+			var names_nd = floors_nd[floors_nd.length-1].names;
+			var nameList = shapeListAndNameMap.get("names");
+			nameList.forEach(function(name){
+				var attrs = name.attrs;
+				var text = attrs.text;
+				if(text != "" && text.substring(0, 3) !== "ARC") {
+					names_nd[names_nd.length] = {id:text, x: Math.floor(attrs.x), y: Math.floor(attrs.y)};
+				}
+			});
+			floors_nd.names = names_nd;
+			buildings_nd[buildings_nd.length-1].floors = floors_nd;
+		});
+		paperShiftMap.buildings = buildings_psm;
+		nameDictionary.buildings = buildings_nd;
+		resizeMap.buildings = buildings_rm;
+	});
 
-//	var request = $.ajax({
-//	 	url: "dictionaryUpload",
-//	 	type: "POST",
-//	 	data: {
-//	 		dictionary: $.param(dictionary),
-//	 		nameChangeMap: $.param(changeMap),
-//	 		sessionTime: sessionTime
-//	 	},
-//	 	dataType: "html"
-//	 });
-//	
-//	 request.fail(function(jqXHR, textStatus) {
-//	 	alert("Request failed: " + textStatus);
-//	 	console.log(JSON.stringify(dictionary));
-//	 	console.log(JSON.stringify(changeMap));
-//	 });
+	var parkingLots = nameDictionary.parkingLots;
+	parkingLotNameAndShapeMap.forEach(function(id, nameAndShapeObj){
+		var attrs = nameAndShapeObj.name.attrs;
+		parkingLots[parkingLots.length] = {id: attrs.text, x: Math.floor(attrs.x), y: Math.floor(attrs.y)};
+	});
+	nameDictionary.parkingLots = parkingLots;
+	
+	var dorms = nameDictionary.dorms;
+	dormNameAndShapeMap.forEach(function(id, nameAndShapeObj){
+		var attrs = nameAndShapeObj.name.attrs;
+		dorms[dorms.length] = {id: attrs.text, x: Math.floor(attrs.x), y: Math.floor(attrs.y)};
+	});
+	nameDictionary.dorms = dorms;
+	
+	paperShiftMap.buildings[paperShiftMap.buildings.length] = {id: GlobalStrings.ALL_BUILDINGS, floors: []};
+	resizeMap.buildings[resizeMap.buildings.length] = {id: GlobalStrings.ALL_BUILDINGS, floors: []};
+	var building_psm = paperShiftMap.buildings[paperShiftMap.buildings.length-1];
+	var building_rm = resizeMap.buildings[resizeMap.buildings.length-1];
+	buildingToFloorMap.forEach(function(bldg, floorToShapeListMap) {
+		var floors_psm = building_psm.floors;
+		var floors_rm = building_rm.floors;
+		floorToShapeListMap.forEach(function(flr, shapeListAndNameMap) {
+			var floorArrayPosPsm = null;
+			var floorArrayPosRm = null;
+			var floor_psm = null;
+			var floor_rm = null
+			for(var i = 0, floorLength = floors_psm.length; i < floorLength; i++) {
+				if(floors_psm[i].id == flr) {
+					floorArrayPosPsm = i;
+					break;
+				}
+			}
+			for(var i = 0, floorLength = floors_rm.length; i < floorLength; i++) {
+				if(floors_rm[i].id == flr) {
+					floorArrayPosRm = i;
+					break;
+				}
+			}
+			if(floorArrayPosPsm == null) {
+				floorArrayPosPsm = floors_psm.length;
+				floors_psm[floorArrayPosPsm] = {id: flr, x: 999999, y: 999999};
+			}
+			if(floorArrayPosRm == null) {
+				floorArrayPosRm = floors_rm.length;
+				floors_rm[floorArrayPosRm] = {id: flr, y: -999999};
+			}
+			
+			floor_psm = floors_psm[floorArrayPosPsm];
+			floor_rm = floors_rm[floorArrayPosRm];
+			
+			var shapeList = shapeListAndNameMap.get("shapes");
+			shapeList.forEach(function(shape) {
+				var bbox = Raphael.pathBBox(shape.attrs.path);
+				if (bbox.x < floor_psm.x) {
+					floor_psm.x = Math.floor(bbox.x);
+				}
+				if (bbox.y < floor_psm.y) {
+					floor_psm.y = Math.floor(bbox.y);
+				}
+				if(bbox.y2 > floor_rm.y) {
+					floor_rm.y = Math.floor(bbox.y2);
+				}
+			});
+			
+			floors_psm[floorArrayPosPsm] = floor_psm;
+			floors_rm[floorArrayPosRm] = floor_rm;
+		});
+		building_psm.floors = floors_psm;
+		building_rm.floors = floors_rm;
+	});
+	paperShiftMap.buildings[paperShiftMap.buildings.length-1] = building_psm;
+	resizeMap.buildings[resizeMap.buildings.length-1] = building_rm;
+	
+	var buildings = dictionary.buildings;
+	var productionDictionary = {buildings: [], parkinglots: [], dorms: [], paths: []};
+	var bldgs = productionDictionary.buildings;
+	for(var i = 0, blen = buildings.length; i < blen; i++) {
+		var building = buildings[i];
+		bldgs[bldgs.length] = {full_id: building.full_id, short_id: building.short_id, floors: []};
+		var bldg = bldgs[bldgs.length-1];
+		var floors = building.floors;
+		var flrs = bldg.floors;
+		for(var j = 0, flen = floors.length; j < flen; j++) {
+			var floor = floors[j];
+			flrs[flrs.length] = {id: floor.id, shapes: []};
+			var flr = flrs[flrs.length-1];
+			var shapes = floor.shapes;
+			var oneLongPath = [];
+			var outlinePath;
+			for(var k = 0, slen = shapes.length; k < slen; k++) {
+				var shp = shapes[k];
+				if(shp.id == "outline") {
+					outlinePath = shp.path;
+				} else {
+					oneLongPath.push(shp.path);
+				}
+			}
+			flr.shapes[0] = {id: "outline", path: outlinePath};
+			flr.shapes[1] = {id: "all", path: oneLongPath.join(" ")};
+			flrs[flrs.length-1] = flr;
+		}
+		bldg.floors = flrs;
+		bldgs[bldgs.length-1] = bldg;
+	}
+	productionDictionary.buildings = bldgs;
+	productionDictionary.parkinglots = dictionary.parkinglots;
+	productionDictionary.dorms = dictionary.dorms;
+	productionDictionary.paths = dictionary.paths;
+	
+	var request = $.ajax({
+	 	url: "dictionaryUpload",
+	 	type: "POST",
+	 	data: {
+	 		dictionary: JSON.stringify(dictionary),
+	 		productionDictionary: JSON.stringify(productionDictionary),
+	 		nameChangeMap: $.param(changeMap),
+	 		sessionTime: sessionTime,
+	 		paperShiftMap: JSON.stringify(paperShiftMap),
+	 		nameDictionary: JSON.stringify(nameDictionary),
+	 		resizeMap: JSON.stringify(resizeMap)
+	 	},
+	 	dataType: "html"
+	 });
+	
+	 request.fail(function(jqXHR, textStatus) {
+	 	alert("Request failed: " + textStatus);
+	 	console.log(JSON.stringify(dictionary));
+	 	console.log(JSON.stringify(productionDictionary));
+	 	console.log(JSON.stringify(changeMap));
+		console.log(JSON.stringify(paperShiftMap));
+		console.log(JSON.stringify(nameDictionary));
+		console.log(JSON.stringify(resizeMap));
+	 });
+	 
+	 LOG.trace("Took " + (now()-start) + " ms to save dictionary");
 }
 
 function changeBuildingFloor() {

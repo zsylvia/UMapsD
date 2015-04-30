@@ -37,14 +37,11 @@ public class GraphUploadServlet extends HttpServlet {
 		String json = request.getParameter("graph");
 		String nonHandicapGraphVertices = request.getParameter("nonHandicapGraphVertices");
 		String handicapGraphVertices = request.getParameter("handicapGraphVertices");
-		System.out.println(nonHandicapGraphVertices);
-		System.out.println("\n\n");
-		System.out.println(handicapGraphVertices);
 		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
 		long sessionTime = Long.valueOf(request.getParameter("sessionTime"));
-		String graphJson = convertParamToJson(json);
-		String graphVertices = "var nonHandicapGraphVertices=" + nonHandicapGraphVertices + ";";
-		graphVertices += "\nvar handicapGraphVertices=" + handicapGraphVertices + ";";
+		String graphJson = convertParamToJson(json) + ";";
+		graphJson += "\nvar nonHandicapGraphVertices=" + nonHandicapGraphVertices + ";";
+		graphJson += "\nvar handicapGraphVertices=" + handicapGraphVertices + ";";
 		File graphDir = new File(getServletContext().getRealPath("/graph"));
 		if(graphDir.exists()) {
 			boolean saveFile = false;
@@ -63,24 +60,6 @@ public class GraphUploadServlet extends HttpServlet {
 					newGraph.createNewFile();
 				}
 				FileUtils.writeStringToFile(newGraph, graphJson);
-			}
-			
-			saveFile = false;
-			File oldGraphVertices = new File(graphDir, "graphVertices.js");
-			if(oldGraphVertices.exists()) {
-				if(!FileUtils.readFileToString(oldGraphVertices).equals(graphVertices)) {
-					saveFile = true;
-					FileUtils.moveFile(oldGraphVertices, new File(graphDir, "graphVertices.js."+format.format(new Date(sessionTime))));
-				} else {
-					// No changes were made
-				}
-			}
-			if(saveFile) {
-				File newGraphVertices = new File(graphDir, "graphVertices.js");
-				if(!newGraphVertices.exists()) {
-					newGraphVertices.createNewFile();
-				}
-				FileUtils.writeStringToFile(newGraphVertices, graphVertices);
 			}
 		}
 	}
