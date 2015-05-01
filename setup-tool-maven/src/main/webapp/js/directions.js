@@ -104,7 +104,7 @@ function extractDirections(path){
 				//should sharp left and sharp right be adjusted so they're basically uturns?
 			}
 			
-			switch(getTypeFromId(names[2])){
+			switch(getTypeFromId(names[1])){
 				case GlobalStrings.ROOM:
 					addDirection((advanced?dir:"") + " through the room");
 					break;
@@ -122,7 +122,15 @@ function extractDirections(path){
 					addDirection((advanced?dir:"") + " down the pathway");
 					break;
 				case GlobalStrings.STAIR:
-					addDirection((advanced?dir:"") + " up/down the stairwell");
+					var floorDiff = getFloorFromId(path[i-1]) - getFloorFromId(path[i]);
+					console.log(path[i-1] + " -> " + path[i]);
+					if(floorDiff < 0) {
+						addDirection((advanced?dir:"") + " down the stairs " + Math.abs(floorDiff) + " floors");
+					} else if(floorDiff > 0) {
+						addDirection((advanced?dir:"") + " up the stairs " + Math.abs(floorDiff) + " floors");
+					} else {
+						addDirection((advanced?dir:""));
+					}
 					break;
 				case GlobalStrings.ELEVATOR:
 					addDirection((advanced?dir:"") + " up/down the elevator");

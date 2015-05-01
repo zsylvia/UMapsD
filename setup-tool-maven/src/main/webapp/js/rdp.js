@@ -28,6 +28,8 @@ var BATHROOM_WOMENS_TOOL_TIP_TEXT = "<b>Currently Plotting Bathrooms (Women's)</
 	"Click inside an area to plot a marker for a women's bathroom.";
 var PARKING_LOT_TOOL_TIP_TEXT = "<b>Currently Plotting Parking Lots</b><br>" +
 	"Click a location where a parking lot is located to plot a marker for it.";
+var DORM_TOOL_TIP_TEXT = "<b>Currently Plotting Dorms</b><br>" +
+	"Click a location where a dorm is located to plot a marker for it";
 var MANUALLY_CONNECTING_MARKER_FROM = "Click on a marker to start a connection from. Or select \"Cancel Manual Connect\" to exit manual connecting mode";
 var MANUALLY_CONNECTING_MARKER_TO = "Click on another marker to make a connection. Or select \"Cancel Manual Connect\" to exit manual connecting mode";
 var REMOVE_MODE_TIP_TEXT = "You are in \"remove mode\". Click any marker or path to remove it.";
@@ -42,8 +44,9 @@ var plottingElevator = 5;
 var plottingBathroomMens = 6;
 var plottingBathroomWomens = 7;
 var plottingParkingLot = 8;
+var plottingDorm = 9;
 
-var markerSize = 5;
+var markerSize = 4;
 var pathStrokeWidth = 4;
 
 var manuallyConnectingMode = false;
@@ -473,8 +476,7 @@ function handleClick(ev, secondTry) {
 			if (!pathClicked) {
 				var clickedElement = null;
 
-				if (currentlyPlotting == plottingRoom || currentlyPlotting == plottingBathroomMens || currentlyPlotting == plottingBathroomWomens
-						|| currentlyPlotting == plottingParkingLot) {
+				if (currentlyPlotting == plottingRoom || currentlyPlotting == plottingBathroomMens || currentlyPlotting == plottingBathroomWomens) {
 					buildingToFloorMap.forEach(function(building, floorToShapeListAndNameMap) {
 						floorToShapeListAndNameMap.forEach(function(floor, shapeListAndNameMap) {
 							shapeListAndNameMap.get("shapes").forEach(function(shape) {
@@ -487,14 +489,25 @@ function handleClick(ev, secondTry) {
 							});
 						});
 					});
+				} else if(currentlyPlotting == plottingParkingLot) {
+					parkingLotNameAndShapeMap.forEach(function(fullId, nameAndShapeMap) {
+						var shape = nameAndShapeMap.shape;
+						if(shape.isPointInside(clickX, clickY)) {
+							clickedElement = shape;
+							return false;
+						}
+					});
+				} else if(currentlyPlotting == plottingDorm) {
+					dormNameAndShapeMap.forEach(function(fullId, nameAndShapeMap) {
+						var shape = nameAndShapeMap.shape;
+						if(shape.isPointInside(clickX, clickY)) {
+							clickedElement = shape;
+							return false;
+						}
+					});
 				}
 				
-				var marker = plotMarker(clickX - paperShiftX, clickY - paperShiftY, clickedElement);
-				if (marker != null) {
-					marker.attr("cx", clickX);
-					marker.attr("cy", clickY);
-					marker.scale(paperResizeRatio, paperResizeRatio, clickX, clickY);
-				}
+				var marker = plotMarker(clickX, clickY, clickedElement);
 			}
 		}
 	} else if (ev.target.getAttribute("customNodeName") == "circle") {
@@ -668,7 +681,8 @@ function cancelManualConnect(cancelManuallyConnectingMode) {
 //element is the element this new marker is connected to
 
 function plotMarker(x, y, element) {
-	if (currentBuilding == GlobalStrings.ALL_BUILDINGS && currentlyPlotting != plottingPathway) {
+	if (currentBuilding == GlobalStrings.ALL_BUILDINGS && currentlyPlotting != plottingPathway && currentlyPlotting != plottingParkingLot &&
+			currentlyPlotting != plottingDorm) {
 		alertDialog("Unless you are plotting pathway markers, you must select a specific building and floor to plot markers.");
 	} else {
 		var marker;
@@ -714,6 +728,14 @@ function plotMarker(x, y, element) {
 				} else {
 					alertDialog("Cannot plot marker for parking lot. The selected point is not inside an area");
 				}
+				break;
+			case plottingDorm:
+				if (element != null) {
+					marker = plotDorm(x, y, element.data(GlobalStrings.ID));
+				} else {
+					alertDialog("Cannot plot marker for dorm. The selected point is not inside an area");
+				}
+				break;
 		}
 
 		if (marker != null) {
@@ -878,6 +900,22 @@ function plotParkingLot(x, y, elementId) {
 	marker.data(GlobalStrings.ID, id);
 	marker.data(GlobalStrings.TYPE, GlobalStrings.PARKING_LOT);
 	typeToMarkerMap.get(GlobalStrings.PARKING_LOT).set(marker.data(GlobalStrings.ID), marker);
+
+	return marker;
+}
+
+function plotDorm(x, y, elementId) {
+	var id;
+	if (idIsValid(elementId)) {
+		id = elementId;
+	} else {
+		id = GlobalStrings.DORM + "_" + elementId;
+	}
+	LOG.info("Plotting new dorm " + id + " at (" + x + "," + y + ")");
+	marker = addMarker(x, y, markerTypeToColorMap.get(GlobalStrings.DORM));
+	marker.data(GlobalStrings.ID, id);
+	marker.data(GlobalStrings.TYPE, GlobalStrings.DORM);
+	typeToMarkerMap.get(GlobalStrings.DORM).set(marker.data(GlobalStrings.ID), marker);
 
 	return marker;
 }
@@ -1189,6 +1227,8 @@ function plotSelect(type) {
 		bathroomWomensSelected();
 	} else if (type == GlobalStrings.PARKING_LOT) {
 		parkingLotSelected();
+	} else if (type == GlobalStrings.DORM) {
+		dormSelected();
 	} else {
 		LOG.warn("plotSelect called with invalid type " + type);
 	}
@@ -1248,6 +1288,12 @@ function parkingLotSelected() {
 	setToolTipTextForCurrentlyPlotting();
 }
 
+function dormSelected() {
+	LOG.debug("Dorm plotting selected");
+	currentlyPlotting = plottingDorm;
+	setToolTipTextForCurrentlyPlotting();
+}
+
 function setToolTipTextForCurrentlyPlotting() {
 	var toolTipText = "";
 	switch (currentlyPlotting) {
@@ -1280,6 +1326,9 @@ function setToolTipTextForCurrentlyPlotting() {
 			break;
 		case plottingParkingLot:
 			toolTipText = PARKING_LOT_TOOL_TIP_TEXT;
+			break;
+		case plottingDorm:
+			toolTipText = DORM_TOOL_TIP_TEXT;
 			break;
 	}
 	setToolTipText(toolTipText);

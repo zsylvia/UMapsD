@@ -459,15 +459,18 @@ function saveDictionaryFile() {
 			floors_rm[floors_rm.length] = {id: flr, y: -999999};
 			var shapeList = shapeListAndNameMap.get("shapes");
 			shapeList.forEach(function(shape) {
-				var bbox = Raphael.pathBBox(shape.attrs.path);
-				if (bbox.x < floors_psm[floors_psm.length-1].x) {
-					floors_psm[floors_psm.length-1].x = Math.floor(bbox.x);
-				}
-				if (bbox.y < floors_psm[floors_psm.length-1].y) {
-					floors_psm[floors_psm.length-1].y = Math.floor(bbox.y);
-				}
-				if(bbox.y2 > floors_rm[floors_rm.length-1].y) {
-					floors_rm[floors_rm.length-1].y = bbox.y2;
+				var path = shape.attrs.path;
+				if(path != "") {
+					var bbox = Raphael.pathBBox(path);
+					if (bbox.x < floors_psm[floors_psm.length-1].x) {
+						floors_psm[floors_psm.length-1].x = Math.floor(bbox.x);
+					}
+					if (bbox.y < floors_psm[floors_psm.length-1].y) {
+						floors_psm[floors_psm.length-1].y = Math.floor(bbox.y);
+					}
+					if(bbox.y2 > floors_rm[floors_rm.length-1].y) {
+						floors_rm[floors_rm.length-1].y = bbox.y2;
+					}
 				}
 			});
 			buildings_psm[buildings_psm.length-1].floors = floors_psm;
@@ -542,15 +545,18 @@ function saveDictionaryFile() {
 			
 			var shapeList = shapeListAndNameMap.get("shapes");
 			shapeList.forEach(function(shape) {
-				var bbox = Raphael.pathBBox(shape.attrs.path);
-				if (bbox.x < floor_psm.x) {
-					floor_psm.x = Math.floor(bbox.x);
-				}
-				if (bbox.y < floor_psm.y) {
-					floor_psm.y = Math.floor(bbox.y);
-				}
-				if(bbox.y2 > floor_rm.y) {
-					floor_rm.y = Math.floor(bbox.y2);
+				var path = shape.attrs.path;
+				if(path != "") {
+					var bbox = Raphael.pathBBox(shape.attrs.path);
+					if (bbox.x < floor_psm.x) {
+						floor_psm.x = Math.floor(bbox.x);
+					}
+					if (bbox.y < floor_psm.y) {
+						floor_psm.y = Math.floor(bbox.y);
+					}
+					if(bbox.y2 > floor_rm.y) {
+						floor_rm.y = Math.floor(bbox.y2);
+					}
 				}
 			});
 			
@@ -564,7 +570,7 @@ function saveDictionaryFile() {
 	resizeMap.buildings[resizeMap.buildings.length-1] = building_rm;
 	
 	var buildings = dictionary.buildings;
-	var productionDictionary = {buildings: [], parkinglots: [], dorms: [], paths: []};
+	var productionDictionary = {buildings: [], parkinglots: [], dorms: [], paths: [], misc: []};
 	var bldgs = productionDictionary.buildings;
 	for(var i = 0, blen = buildings.length; i < blen; i++) {
 		var building = buildings[i];
@@ -578,17 +584,33 @@ function saveDictionaryFile() {
 			var flr = flrs[flrs.length-1];
 			var shapes = floor.shapes;
 			var oneLongPath = [];
+			var roomPath = [];
+			var bathroomMensPath = [];
+			var bathroomWomensPath = [];
 			var outlinePath;
 			for(var k = 0, slen = shapes.length; k < slen; k++) {
 				var shp = shapes[k];
 				if(shp.id == "outline") {
 					outlinePath = shp.path;
 				} else {
-					oneLongPath.push(shp.path);
+					var type = getTypeFromId(shp.id);
+					if(type == GlobalStrings.ROOM) {
+						roomPath.push(shp.path);
+					} else if(type == GlobalStrings.BATHROOM_MENS) {
+						bathroomMensPath.push(shp.path);
+					} else if(type == GlobalStrings.BATHROOM_WOMENS) {
+						bathroomWomensPath.push(shp.path);
+					} else {
+						oneLongPath.push(shp.path);
+					}
 				}
 			}
 			flr.shapes[0] = {id: "outline", path: outlinePath};
 			flr.shapes[1] = {id: "all", path: oneLongPath.join(" ")};
+			flr.shapes[2] = {id: GlobalStrings.ROOM, path: roomPath.join(" ")};
+			flr.shapes[3] = {id: GlobalStrings.BATHROOM_MENS, path: bathroomMensPath.join(" ")};
+			flr.shapes[4] = {id: GlobalStrings.BATHROOM_WOMENS, path: bathroomWomensPath.join(" ")};
+			
 			flrs[flrs.length-1] = flr;
 		}
 		bldg.floors = flrs;
@@ -598,6 +620,7 @@ function saveDictionaryFile() {
 	productionDictionary.parkinglots = dictionary.parkinglots;
 	productionDictionary.dorms = dictionary.dorms;
 	productionDictionary.paths = dictionary.paths;
+	productionDictionary.misc = dictionary.misc;
 	
 	var request = $.ajax({
 	 	url: "dictionaryUpload",
@@ -605,7 +628,7 @@ function saveDictionaryFile() {
 	 	data: {
 	 		dictionary: JSON.stringify(dictionary),
 	 		productionDictionary: JSON.stringify(productionDictionary),
-	 		nameChangeMap: $.param(changeMap),
+	 		nameChangeMap: JSON.stringify(changeMap),
 	 		sessionTime: sessionTime,
 	 		paperShiftMap: JSON.stringify(paperShiftMap),
 	 		nameDictionary: JSON.stringify(nameDictionary),
@@ -622,6 +645,10 @@ function saveDictionaryFile() {
 		console.log(JSON.stringify(paperShiftMap));
 		console.log(JSON.stringify(nameDictionary));
 		console.log(JSON.stringify(resizeMap));
+	 });
+	 
+	 request.done(function(msg) {
+		 console.log(msg);
 	 });
 	 
 	 LOG.trace("Took " + (now()-start) + " ms to save dictionary");

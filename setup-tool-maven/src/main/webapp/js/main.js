@@ -39,6 +39,8 @@ var mobileView;
 
 var touchEvent;
 
+var buildingToRoomNamesMap = new buckets.Dictionary();
+
 var LOG = new Logger(LoggingLevel.ALL);
 
 $(document).ready(function() {
@@ -53,7 +55,25 @@ $(document).ready(function() {
 		nonHandicapGraph.vertices = nonHandicapGraphVertices;
 		handicapGraph.vertices = handicapGraphVertices;
 		
-		loadMarkersForAllBuildingsAndFloors();
+		var bldgs = nameDictionary.buildings;
+		for(var i = 0, blen = bldgs.length; i < blen; i++) {
+			var bldg = bldgs[i];
+			var flrs = bldg.floors;
+			var floorToRoomNameListMap = new buckets.Dictionary();
+			for(var j = 0, flen = flrs.length; j < flen; j++) {
+				var flr = flrs[j];
+				var names = flr.names;
+				var nameList = new buckets.LinkedList();
+				for(var k = 0, nlen = names.length; k < nlen; k++) {
+					var nameId = names[k].id;
+					if(nameId != "" && nameId != "outline") {
+						nameList.add(nameId);
+					}
+				}
+				floorToRoomNameListMap.set(flr.id, nameList);
+			}
+			buildingToRoomNamesMap.set(bldg.id, floorToRoomNameListMap);
+		}
 		
 		showRaphael();
 		
@@ -419,30 +439,39 @@ function directionsFromTypeChange() {
 							directionsFromFloor = floorSelected;
 							directionsFromRoom = null;
 							html.push("<option value='select_room' selected='true'>Select Room</option>");
-							typeToMarkerMap.get(GlobalStrings.ROOM).forEach(function(markerId, marker){
-								if(marker.data(GlobalStrings.BUILDING) == buildingSelected && marker.data(GlobalStrings.FLOOR) == floorSelected){
-									html.push("<option value='" + markerId + "'>" + getRoomFromRoomId(markerId) + "</option>");
-								}
+							buildingToRoomNamesMap.get(buildingSelected).get(floorSelected).forEach(function(name) {
+								html.push("<option value='" + formatRoomId(buildingSelected, floorSelected, name) + "'>" + name + "</option>");
 							});
+//							typeToMarkerMap.get(GlobalStrings.ROOM).forEach(function(markerId, marker){
+//								if(marker.data(GlobalStrings.BUILDING) == buildingSelected && marker.data(GlobalStrings.FLOOR) == floorSelected){
+//									html.push("<option value='" + markerId + "'>" + getRoomFromRoomId(markerId) + "</option>");
+//								}
+//							});
 							html.push("</select>");
 						} else {
 							directionsFromFloor = floorSelected;
 							
 							if(roomSelected === undefined) {
 								html.push("<option value='select_room' selected='true'>Select Room</option>");
-								typeToMarkerMap.get(GlobalStrings.ROOM).forEach(function(markerId, marker){
-									if(marker.data(GlobalStrings.BUILDING) == buildingSelected && marker.data(GlobalStrings.FLOOR) == floorSelected){
-										html.push("<option value='" + markerId + "'>" + getRoomFromRoomId(markerId) + "</option>");
-									}
+								buildingToRoomNamesMap.get(buildingSelected).get(floorSelected).forEach(function(name) {
+									html.push("<option value='" + formatRoomId(buildingSelected, floorSelected, name) + "'>" + name + "</option>");
 								});
+//								typeToMarkerMap.get(GlobalStrings.ROOM).forEach(function(markerId, marker){
+//									if(marker.data(GlobalStrings.BUILDING) == buildingSelected && marker.data(GlobalStrings.FLOOR) == floorSelected){
+//										html.push("<option value='" + markerId + "'>" + getRoomFromRoomId(markerId) + "</option>");
+//									}
+//								});
 								html.push("</select>");
 							} else {
 								directionsFromRoom = getRoomFromRoomId(roomSelected);
-								typeToMarkerMap.get(GlobalStrings.ROOM).forEach(function(markerId, marker){
-									if(marker.data(GlobalStrings.BUILDING) == buildingSelected && marker.data(GlobalStrings.FLOOR) == floorSelected){
-										html.push("<option value='" + markerId + "'"+(directionsFromRoom == getRoomFromRoomId(markerId) ? " selected='true'" : "")+">" + getRoomFromRoomId(markerId) + "</option>");
-									}
+								buildingToRoomNamesMap.get(buildingSelected).get(floorSelected).forEach(function(name) {
+									html.push("<option value='" + formatRoomId(buildingSelected, floorSelected, name) + "'"+(directionsFromRoom == name ? " selected='true'" : "")+">" + name + "</option>");
 								});
+//								typeToMarkerMap.get(GlobalStrings.ROOM).forEach(function(markerId, marker){
+//									if(marker.data(GlobalStrings.BUILDING) == buildingSelected && marker.data(GlobalStrings.FLOOR) == floorSelected){
+//										html.push("<option value='" + markerId + "'"+(directionsFromRoom == getRoomFromRoomId(markerId) ? " selected='true'" : "")+">" + getRoomFromRoomId(markerId) + "</option>");
+//									}
+//								});
 								html.push("</select>");
 							}
 						}
@@ -559,30 +588,39 @@ function directionsToTypeChange() {
 							directionsToRoom = null;
 							
 							html.push("<option value='select_room' selected='true'>Select Room</option>");
-							typeToMarkerMap.get(GlobalStrings.ROOM).forEach(function(markerId, marker){
-								if(marker.data(GlobalStrings.BUILDING) == buildingSelected && marker.data(GlobalStrings.FLOOR) == floorSelected){
-									html.push("<option value='" + markerId + "'>" + getRoomFromRoomId(markerId) + "</option>");
-								}
+							buildingToRoomNamesMap.get(buildingSelected).get(floorSelected).forEach(function(name) {
+								html.push("<option value='" + formatRoomId(buildingSelected, floorSelected, name) + "'>" + name + "</option>");
 							});
+//							typeToMarkerMap.get(GlobalStrings.ROOM).forEach(function(markerId, marker){
+//								if(marker.data(GlobalStrings.BUILDING) == buildingSelected && marker.data(GlobalStrings.FLOOR) == floorSelected){
+//									html.push("<option value='" + markerId + "'>" + getRoomFromRoomId(markerId) + "</option>");
+//								}
+//							});
 							html.push("</select>");
 						} else {
 							directionsToFloor = floorSelected;
 							
 							if(roomSelected === undefined) {
 								html.push("<option value='select_room' selected='true'>Select Room</option>");
-								typeToMarkerMap.get(GlobalStrings.ROOM).forEach(function(markerId, marker){
-									if(marker.data(GlobalStrings.BUILDING) == buildingSelected && marker.data(GlobalStrings.FLOOR) == floorSelected){
-										html.push("<option value='" + markerId + "'>" + getRoomFromRoomId(markerId) + "</option>");
-									}
+								buildingToRoomNamesMap.get(buildingSelected).get(floorSelected).forEach(function(name) {
+									html.push("<option value='" + formatRoomId(buildingSelected, floorSelected, name) + "'>" + name + "</option>");
 								});
+//								typeToMarkerMap.get(GlobalStrings.ROOM).forEach(function(markerId, marker){
+//									if(marker.data(GlobalStrings.BUILDING) == buildingSelected && marker.data(GlobalStrings.FLOOR) == floorSelected){
+//										html.push("<option value='" + markerId + "'>" + getRoomFromRoomId(markerId) + "</option>");
+//									}
+//								});
 								html.push("</select>");
 							} else {
 								directionsToRoom = getRoomFromRoomId(roomSelected);
-								typeToMarkerMap.get(GlobalStrings.ROOM).forEach(function(markerId, marker){
-									if(marker.data(GlobalStrings.BUILDING) == buildingSelected && marker.data(GlobalStrings.FLOOR) == floorSelected){
-										html.push("<option value='" + markerId + "'"+(directionsToRoom == getRoomFromRoomId(markerId) ? " selected='true'" : "")+">" + getRoomFromRoomId(markerId) + "</option>");
-									}
+								buildingToRoomNamesMap.get(buildingSelected).get(floorSelected).forEach(function(name) {
+									html.push("<option value='" + formatRoomId(buildingSelected, floorSelected, name) + "'"+(directionsFromRoom == name ? " selected='true'" : "")+">" + name + "</option>");
 								});
+//								typeToMarkerMap.get(GlobalStrings.ROOM).forEach(function(markerId, marker){
+//									if(marker.data(GlobalStrings.BUILDING) == buildingSelected && marker.data(GlobalStrings.FLOOR) == floorSelected){
+//										html.push("<option value='" + markerId + "'"+(directionsToRoom == getRoomFromRoomId(markerId) ? " selected='true'" : "")+">" + getRoomFromRoomId(markerId) + "</option>");
+//									}
+//								});
 								html.push("</select>");
 							}
 						}
@@ -721,29 +759,25 @@ function findPath(marker1ID, marker2ID, handicap) {
 	directionsPathArray = path;
 	directionsPathArrayPosition = -1;
 	
-	pathMap.forEach(function(pathString, path) {
-		path.element.stop();
-		path.element.attr({
-			fill: "black",
-			stroke: "black"
-		});
-		path.element.hide();
-	});
-	
-	var displayablePath = new buckets.Dictionary();
-	for (var i = 0, pathLength = path.length; i < pathLength; i++) {
-		if (i < path.length - 1) {
-			var pathObject = pathMap.get(path[i] + "<->" + path[i + 1]);
-			if (pathObject == null) {
-				pathObject = pathMap.get(path[i + 1] + "<->" + path[i]);
+	var buildingAndFloorsToLoad = new buckets.Dictionary();
+	for(var i = 0, len = path.length; i < len; i++) {
+		var pathId = path[i];
+		var bldg = getBuildingFromId(pathId);
+		if(bldg != "") {
+			var flrSet = buildingAndFloorsToLoad.get(bldg);
+			if(flrSet == null) {
+				flrSet = new buckets.Set();
 			}
-			var pathElement = pathObject.element;
-
-			if (pathElement != null) {
-				pathElement.show().toFront();
-			}
+			flrSet.add(getFloorFromId(pathId));
+			buildingAndFloorsToLoad.set(bldg, flrSet);
 		}
 	}
+	
+	buildingAndFloorsToLoad.forEach(function(building, floorSet){
+		floorSet.forEach(function(floor){
+			loadMarkersForBuildingAndFloor(building, floor);
+		});
+	});
 	
 	directionsPathArray = extractDirections(path);
 	
@@ -776,10 +810,34 @@ function findPath(marker1ID, marker2ID, handicap) {
 		}
 	}
 	
-	zoomInOnPaths(allPathIds);
-	
-	showNextDirections();
+	if(directionsPathArray.length > 1 || directionsPathArray[0].pathIds.length > 0) {
+		pathMap.forEach(function(pathString, path) {
+			path.element.stop();
+			path.element.attr({
+				fill: "black",
+				stroke: "black"
+			});
+			path.element.hide();
+		});
+		
+		var displayablePath = new buckets.Dictionary();
+		for (var i = 0, pathLength = path.length; i < pathLength; i++) {
+			if (i < path.length - 1) {
+				var pathObject = pathMap.get(path[i] + "<->" + path[i + 1]);
+				if (pathObject == null) {
+					pathObject = pathMap.get(path[i + 1] + "<->" + path[i]);
+				}
+				var pathElement = pathObject.element;
 
+				if (pathElement != null) {
+					pathElement.show().toFront();
+				}
+			}
+		}
+		zoomInOnPaths(allPathIds);
+		showNextDirections();
+	}
+	
 	LOG.trace("Took " + (now() - start) + " ms to find and show path from " + marker1ID + " to " + marker2ID);
 }
 
@@ -818,7 +876,8 @@ function showDirectionsForStep(step) {
 			newDisplayedPathElement.attr({fill: "red", stroke: "red"});
 		}
 		
-		var floor = getFloorFromId(pathIds[0]);
+		var floor = getFloorFromId(pathMap.get(pathIds[pathIds.length-1]).marker2Data.id);
+		console.log("Current floor: " + currentFloor + " vs " + floor);
 		if(floor != "" && floor != currentFloor) {
 			currentFloor = floor;
 			showShapesForCurrentBuildingAndFloor();
@@ -835,7 +894,7 @@ function showDirectionsForStep(step) {
 		}
 		
 		resizeToShowPaths(pathIds);
-
+		
 		directionsPathArrayPosition = pathArrayPosition;
 		
 		$("#directions_step_"+pathArrayPosition).addClass("selected_direction");
@@ -1102,3 +1161,10 @@ function unselectToOnMap() {
 	directionsToTypeChange();
 }
 
+function alertDialog(alertText) {
+	$("#dialog_modal .modal-title").toggleClass("text-danger", true);
+	$("#dialog_modal .modal-title").text("Alert");
+	$("#dialog_modal .modal-body").html("<b>" + alertText + "</b>");
+	$("#dialog_modal .modal-footer").html("<button type='button' class='btn btn-default' data-dismiss='modal'>Ok</button>");
+	$('#dialog_modal').modal('toggle');
+}

@@ -40,7 +40,7 @@ public class DictionaryUploadServlet extends HttpServlet {
 		long sessionTime = Long.valueOf(request.getParameter("sessionTime"));
 		String dictionaryJson = "var dictionary=" + request.getParameter("dictionary") + ";";
 		String productionDictionaryJson = "var dictionary=" + request.getParameter("productionDictionary") + ";";
-		String nameChangeMapJson = convertNameChangeMapToJson(nameChangeMap);
+		String nameChangeMapJson = "var importedNameChangeMap=" + request.getParameter("nameChangeMap") + ";";
 		String paperShiftMapJson = "var paperShiftMap=" + request.getParameter("paperShiftMap") + ";";
 		String nameDictionaryJson = "var nameDictionary=" + request.getParameter("nameDictionary") + ";";
 		String resizeMapJson = "var resizeMap=" + request.getParameter("resizeMap") + ";";
