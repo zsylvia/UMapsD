@@ -95,6 +95,7 @@ text {
     float: right;
     right: 0;
     overflow: scroll;
+    display: none;
 }
 
 #directions_display_mobile {
@@ -104,6 +105,7 @@ text {
 	text-align: center;
 	position: relative;
 	word-wrap: break-word;
+	display: none;
 }
 
 .selected_direction {

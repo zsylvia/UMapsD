@@ -3,15 +3,17 @@ This contains all the objects and methods to create the raphael page, loads in t
 and exposes methods to control which buildings and floors and room names are displayed
 */
 
+// The div name of where to draw the paper
 var raphaelDiv = "raphael";
 var raphaelDivJQuery = "#" + raphaelDiv;
 
+// Raphael paper object
 var paper;
-var totalCenterX;
-var totalCenterY;
 
+// Map of already loaded buildings and floors to avoid loading twice
 var loadedBuildingsAndFloors = new buckets.Dictionary();
 
+// Map for every marker type
 var roomMap = new buckets.Dictionary();
 var doorMap = new buckets.Dictionary();
 var hallwayMap = new buckets.Dictionary();
@@ -22,26 +24,10 @@ var bathroomMensMap = new buckets.Dictionary();
 var bathroomWomensMap = new buckets.Dictionary();
 var parkingLotMap = new buckets.Dictionary();
 var dormMap = new buckets.Dictionary();
+var miscMap = new buckets.Dictionary();
 
-var parkingLotNameAndShapeMap = new buckets.Dictionary();
-var dormNameAndShapeMap = new buckets.Dictionary();
-var miscNameAndShapeMap = new buckets.Dictionary();
-var pathShapesList = new buckets.LinkedList();
-
-var markerSize = 5;
-var pathStrokeWidth = 4;
-
-var mouseOnMarker = false;
-
-//These counts are just used when naming, the number does not matter it only removes duplicates
-var doorIdCount = 0;
-var hallwayIdCount = 0;
-var pathwayIdCount = 0;
-var stairIdCount = 0;
-var elevatorIdCount = 0;
-var bathroomMensIdCount = 0;
-var bathroomWomensIdCount = 0;
-
+// List of all the marker maps. Allows for running functions
+// on all markers without having to specify every marker map
 var allMarkers = new buckets.LinkedList();
 allMarkers.add(roomMap);
 allMarkers.add(doorMap);
@@ -53,6 +39,72 @@ allMarkers.add(bathroomMensMap);
 allMarkers.add(bathroomWomensMap);
 allMarkers.add(parkingLotMap);
 allMarkers.add(dormMap);
+allMarkers.add(miscMap);
+
+// Map of marker type to the corresponding marker map
+var typeToMarkerMap = new buckets.Dictionary();
+typeToMarkerMap.set(GlobalStrings.ROOM, roomMap);
+typeToMarkerMap.set(GlobalStrings.DOOR, doorMap);
+typeToMarkerMap.set(GlobalStrings.HALLWAY, hallwayMap);
+typeToMarkerMap.set(GlobalStrings.PATHWAY, pathwayMap);
+typeToMarkerMap.set(GlobalStrings.STAIR, stairMap);
+typeToMarkerMap.set(GlobalStrings.ELEVATOR, elevatorMap);
+typeToMarkerMap.set(GlobalStrings.BATHROOM_MENS, bathroomMensMap);
+typeToMarkerMap.set(GlobalStrings.BATHROOM_WOMENS, bathroomWomensMap);
+typeToMarkerMap.set(GlobalStrings.PARKING_LOT, parkingLotMap);
+typeToMarkerMap.set(GlobalStrings.DORM, dormMap);
+typeToMarkerMap.set(GlobalStrings.MISC, miscMap);
+
+// Map of marker type to the corresponding default marker color
+var markerTypeToColorMap = new buckets.Dictionary();
+markerTypeToColorMap.set(GlobalStrings.ROOM, GlobalStrings.COLOR.RED);
+markerTypeToColorMap.set(GlobalStrings.DOOR, GlobalStrings.COLOR.BLUE);
+markerTypeToColorMap.set(GlobalStrings.HALLWAY, GlobalStrings.COLOR.ORANGE);
+markerTypeToColorMap.set(GlobalStrings.PATHWAY, GlobalStrings.COLOR.GREEN);
+markerTypeToColorMap.set(GlobalStrings.STAIR, GlobalStrings.COLOR.PURPLE);
+markerTypeToColorMap.set(GlobalStrings.ELEVATOR, GlobalStrings.COLOR.YELLOW);
+markerTypeToColorMap.set(GlobalStrings.BATHROOM_MENS, GlobalStrings.COLOR.CYAN);
+markerTypeToColorMap.set(GlobalStrings.BATHROOM_WOMENS, GlobalStrings.COLOR.PINK);
+markerTypeToColorMap.set(GlobalStrings.PARKING_LOT, GlobalStrings.COLOR.LIME);
+markerTypeToColorMap.set(GlobalStrings.DORM, GlobalStrings.COLOR.VIOLET);
+markerTypeToColorMap.set(GlobalStrings.MISC, GlobalStrings.COLOR.NAVY);
+
+// A list of the types of markers that should be shown no matter what floor or building you are on
+var markerTypesToAlwaysShow = new buckets.LinkedList();
+markerTypesToAlwaysShow.add(GlobalStrings.PATHWAY);
+markerTypesToAlwaysShow.add(GlobalStrings.PARKING_LOT);
+markerTypesToAlwaysShow.add(GlobalStrings.DORM);
+markerTypesToAlwaysShow.add(GlobalStrings.MISC);
+
+
+// Map of all parking lot names and shapes
+// parkingLotNameAndShapeMap.get("parkingLot") will return an object in the form {name: raphaelTextObject, shape: raphaelPathObject}
+var parkingLotNameAndShapeMap = new buckets.Dictionary();
+// Map of all dorm names and shapes
+// dormNameAndShapeMap("dormName") will return an object in the form {name: raphaelTextObject, shape: raphaelPathObject}
+var dormNameAndShapeMap = new buckets.Dictionary();
+// Map of all misc area names and shapes
+// miscNameAndShapeMap("miscName") will return an object in the form {name: raphaelTextObject, shape: raphaelPathObject}
+var miscNameAndShapeMap = new buckets.Dictionary();
+// List of all the drawn pathways
+var pathShapesList = new buckets.LinkedList();
+
+// Default marker size
+var markerSize = 5;
+// Default path width (the path that shows when you are getting directions)
+var pathStrokeWidth = 4;
+
+// Global flag if the mouse is on a marker (used for specifying type of dragging events)
+var mouseOnMarker = false;
+
+//These counts are just used when naming, the number does not matter it only removes duplicates
+var doorIdCount = 0;
+var hallwayIdCount = 0;
+var pathwayIdCount = 0;
+var stairIdCount = 0;
+var elevatorIdCount = 0;
+var bathroomMensIdCount = 0;
+var bathroomWomensIdCount = 0;
 
 var roomConnectionMap = newConnectionMap();
 var doorConnectionMap = newConnectionMap();
@@ -77,72 +129,104 @@ typeToConnectionMap.set(GlobalStrings.BATHROOM_WOMENS, bathroomWomensConnectionM
 typeToConnectionMap.set(GlobalStrings.PARKING_LOT, parkingLotConnectionMap);
 typeToConnectionMap.set(GlobalStrings.DORM, parkingLotConnectionMap);
 
-var typeToMarkerMap = new buckets.Dictionary();
-typeToMarkerMap.set(GlobalStrings.ROOM, roomMap);
-typeToMarkerMap.set(GlobalStrings.DOOR, doorMap);
-typeToMarkerMap.set(GlobalStrings.HALLWAY, hallwayMap);
-typeToMarkerMap.set(GlobalStrings.PATHWAY, pathwayMap);
-typeToMarkerMap.set(GlobalStrings.STAIR, stairMap);
-typeToMarkerMap.set(GlobalStrings.ELEVATOR, elevatorMap);
-typeToMarkerMap.set(GlobalStrings.BATHROOM_MENS, bathroomMensMap);
-typeToMarkerMap.set(GlobalStrings.BATHROOM_WOMENS, bathroomWomensMap);
-typeToMarkerMap.set(GlobalStrings.PARKING_LOT, parkingLotMap);
-typeToMarkerMap.set(GlobalStrings.DORM, parkingLotMap);
-
-var markerTypeToColorMap = new buckets.Dictionary();
-markerTypeToColorMap.set(GlobalStrings.ROOM, GlobalStrings.COLOR.RED);
-markerTypeToColorMap.set(GlobalStrings.DOOR, GlobalStrings.COLOR.BLUE);
-markerTypeToColorMap.set(GlobalStrings.HALLWAY, GlobalStrings.COLOR.ORANGE);
-markerTypeToColorMap.set(GlobalStrings.PATHWAY, GlobalStrings.COLOR.GREEN);
-markerTypeToColorMap.set(GlobalStrings.STAIR, GlobalStrings.COLOR.PURPLE);
-markerTypeToColorMap.set(GlobalStrings.ELEVATOR, GlobalStrings.COLOR.YELLOW);
-markerTypeToColorMap.set(GlobalStrings.BATHROOM_MENS, GlobalStrings.COLOR.CYAN);
-markerTypeToColorMap.set(GlobalStrings.BATHROOM_WOMENS, GlobalStrings.COLOR.PINK);
-markerTypeToColorMap.set(GlobalStrings.PARKING_LOT, GlobalStrings.COLOR.LIME);
-markerTypeToColorMap.set(GlobalStrings.DORM, GlobalStrings.COLOR.VIOLET);
-
+// Map of path objects (the ones that connect 2 markers)
 var pathMap = new buckets.Dictionary();
 
+// Map of building short_id to full_id determined from the dictionary
 var buildingShortToLongNameMap = new buckets.Dictionary();
+
+// Map of building id, to floor id, to map of name list and shape list
+// i.e. to get shape list for building dion floor 1 : buildingToFloorMap.get("dion").get("1").get("shapes")
 var buildingToFloorMap = new buckets.Dictionary();
+
+// Map of building short_id to floor ids. So we know how many floors each building has
 var buildingToFloorIdsMap = new buckets.Dictionary();
+
+// The current building focused on. This is the default building that loads at first.
+// Define this variable in another js file to set the default building if you want other
+// than ALL_BUILDINGS
 var currentBuilding = GlobalStrings.ALL_BUILDINGS;
+
+// The current floor focused on. This is the default floor that loads at first.
+// Define this variable in another js file to set the default floor if you want other
+// than 1
 var currentFloor = "1";
+
+// The current floor actually showing. Starts at -1 (meaning not showing), keep that
 var showingFloor = "-1";
 
+// The 'paper resize ratio', aka the zoom level of the paper
 var paperResizeRatio = 1;
+
+// The width/height of the paper. After zooming, paper.width and paper.height
+// doesn't reflect the actual displayed width. These track that
 var paperWidth;
 var paperHeight;
 
+// The x/y shift of the paper
 var paperShiftX = 0;
 var paperShiftY = 0;
 
 var draggingEverythingIgnoreClick = false;
 
+// Set markersInvisible = false in another js file if you want
+// markers to be visible. For example, the RDP tool has markersInvisible
+// set to false
 var markersInvisible = true;
 
+// Flag that says if the dictionary has been loaded in yet
 var dictionaryLoaded = false;
 
 var mouseDown = false;
+
+// Global variables for keeping track of mouse click locations as well
+// as touch locations for multitouch
 var currX;
 var currY;
 var currX2;
 var currY2;
 
+// Set hasGraph = true in another js file if the graph.js file is loaded in.
+// For example, renaming tool keeps this false because there is no pathfinding.
+// MUST SET TO TRUE IN ANOTHER JS FILE IF PATHFINDING IS USED
 var hasGraph = false;
 
-var paperViewBoxMap;
-
+// A set of raphael objects that are currently being displayed.
+// This is a quick way to run show(), hide() or other ops on
+// just the displayed objects
 var showingShapesAndNamesSet;
 
+// Count of mouse move events. This is used to limit the number of events
+// processed especially in mobile. i.e. mouseMoveCount%5 == 0 in the mouse event
+// handler would allow you to only do an operation every 5 mouse moves to not be
+// too heavy on processing
 var mouseMoveCount = 0;
 
+// Variable to keep track of the previous distance between touches. This is used to calculate
+// if we are pinch-to-zoom in or out
 var touchDistance = 0;
 
+// The default/max/min font size for text
 var defaultFontSize = 10;
 var maxFontSize = 15;
 var minFontSize = 5;
 
+// Map of type to the color of the shape to be drawn
+var typeToShapeColor = new buckets.Dictionary();
+typeToShapeColor.set(GlobalStrings.ROOM, "#E74C3C");
+typeToShapeColor.set(GlobalStrings.BATHROOM_MENS, "#2980b9");
+typeToShapeColor.set(GlobalStrings.BATHROOM_WOMENS, "#FF69B4");
+typeToShapeColor.set(GlobalStrings.PARKING_LOT, "#D35400");
+typeToShapeColor.set(GlobalStrings.DORM, "#F7CA18");
+typeToShapeColor.set(GlobalStrings.MISC, "#FDDCAC");
+defaultShapeColor = "#D2D7D3";
+buildingOutlineColor = "gray";
+
+
+// Object that represents a connection for a marker. 
+// If markerA connects to markerB with distance of 30, 
+// marker a would have new Connection(markerB, 3) in the
+// marker connection map
 function Connection(marker, distance) {
 	this.marker = marker;
 	this.distance = distance;
@@ -171,7 +255,12 @@ $(document).ready(function() {
 		
 		raphaelSetup();
 		
+		// Like a camera focusing. This is to get the text to resize correctly 
+		zoomIn();
+		zoomOut();
+		
 		$(window).resize(function() {
+			// This makes the view and raphael div the perfect size on the page to not have any scroll bar
 			$("#view").css("height", $(window).height() - $("#navbar").outerHeight(true) - 5);
 			$("#view").css("width", $("#navbar").width());
 			$(raphaelDivJQuery).css("height", $("#view").height());
@@ -184,6 +273,7 @@ $(document).ready(function() {
 			paper.setSize($(raphaelDivJQuery).width(), $(raphaelDivJQuery).height());
 		});
 		
+		// Event for when the user touches the screen
 		document.getElementById(raphaelDiv).addEventListener("touchstart", function(event) {
 			if (event.preventDefault) event.preventDefault();
 			currX = event.touches[0].pageX;
@@ -195,6 +285,8 @@ $(document).ready(function() {
 			}
 			mouseDown = true;
 		}, false);
+		
+		// Event for when the user drags a finger (or more)
 		document.getElementById(raphaelDiv).addEventListener("touchmove", function(event) {
 			if (event.preventDefault) event.preventDefault();
 			if (mouseDown && !mouseOnMarker && (mouseMoveCount % 10 == 0)) {
@@ -226,18 +318,21 @@ $(document).ready(function() {
 			}
 			mouseMoveCount++;
 		}, false);
+		
+		// Event for when the user lifts a finger
 		document.getElementById(raphaelDiv).addEventListener("touchend", function(event) {
 			if (event.preventDefault) event.preventDefault();
 			if (mouseDown) {
 				mouseDown = false;
 			}
 		}, false);
+		
 		$(raphaelDivJQuery).mousedown(function(event) {
 			var ev = event;
 			if(ev.button == 0) {
 				if(event.target.nodeName == "tspan" || ev.offsetX === undefined) {
 					currX = ev.pageX;
-					currY = ev.pageY - ($(document).height() - $("#raphael").height());
+					currY = ev.pageY - ($(document).height() - $(raphaelDivJQuery).height());
 				} else {
 					currX = ev.offsetX;
 					currY = ev.offsetY;
@@ -270,7 +365,7 @@ $(document).ready(function() {
 					var pX = ev.pageX;
 					var pY = ev.pageY;
 					var docHeight = $(document).height();
-					var raphaelHeight = $("#raphael").height();
+					var raphaelHeight = $(raphaelDivJQuery).height();
 					shiftX = Math.floor(shiftX + (cX - pX) * rr);
 					shiftY = Math.floor(shiftY + (cY - (pY - (docHeight - raphaelHeight))) * rr);
 					paperShiftX = shiftX;
@@ -329,6 +424,11 @@ $(document).ready(function() {
 	}, 50);
 });
 
+/**
+ * raphaelSetup
+ * 
+ * Populates the buildingToFloorIdsMap and loads all parking lots, dorms, paths, and misc 
+ */
 function raphaelSetup() {
 	var buildings = dictionary.buildings;
 	
@@ -363,8 +463,7 @@ function raphaelSetup() {
 		var centerY = bbox.y + (bbox.height / 2);
 
 		var name = paper.text(centerX, centerY, shape.full_id).attr({"font-size": defaultFontSize}).toFront();
-//		path.attr({fill: "#fddcac", "fill-opacity": .75, stroke: "white", "stroke-opacity": 1});
-		path.attr({fill: "#D35400", "fill-opacity": .75, stroke: "white", "stroke-opacity": 1});
+		path.attr({fill: typeToShapeColor.get(GlobalStrings.PARKING_LOT), "fill-opacity": .75, stroke: "white", "stroke-opacity": 1});
 		
 		parkingLotNameAndShapeMap.set(shape.full_id, {name: name, shape: path});
 	}
@@ -378,8 +477,7 @@ function raphaelSetup() {
 		var centerY = bbox.y + (bbox.height / 2);
 
 		var name = paper.text(centerX, centerY, shape.full_id).attr({"font-size": defaultFontSize}).toFront();
-//		path.attr({fill: "#fddcac", "fill-opacity": .75, stroke: "white", "stroke-opacity": 1});
-		path.attr({fill: "#F7CA18", "fill-opacity": .75, stroke: "white", "stroke-opacity": 1});
+		path.attr({fill: typeToShapeColor.get(GlobalStrings.DORM), "fill-opacity": .75, stroke: "white", "stroke-opacity": 1});
 		
 		dormNameAndShapeMap.set(shape.full_id, {name: name, shape: path});
 	}
@@ -393,7 +491,7 @@ function raphaelSetup() {
 		var centerY = bbox.y + (bbox.height / 2);
 
 		var name = paper.text(centerX, centerY, shape.id).attr({"font-size": defaultFontSize}).toFront();
-		path.attr({fill: "#fddcac", "fill-opacity": .75, stroke: "white", "stroke-opacity": 1});
+		path.attr({fill: typeToShapeColor.get(GlobalStrings.MISC), "fill-opacity": .75, stroke: "white", "stroke-opacity": 1});
 		
 		miscNameAndShapeMap.set(shape.id, {name: name, shape: path});
 	}
@@ -419,11 +517,17 @@ function raphaelSetup() {
 	dictionaryLoaded = true;
 }
 
+
+/**
+ * loadGraphData
+ * 
+ * Loads in the graph data. Creates all paths and markers without any connections
+ */
 function loadGraphData() {
-	var start = new Date().getTime();
+	var start = now();
 	var json = null;
 	try {
-		json = graphJS
+		json = graphJS;
 	} catch (err) {
 		if (err.name == "ReferenceError") {
 			// Ignore...
@@ -449,6 +553,15 @@ function loadGraphData() {
 	return false;
 }
 
+
+/**
+ * loadShapesForBuildingAndFloor
+ * 
+ * Loads shapes and name text for passed in building and floor if
+ * they haven't already been loaded and sets the color of the shapes
+ * @param building
+ * @param floor
+ */
 function loadShapesForBuildingAndFloor(building, floor) {
 	var start = now();
 	var bldgToFlrMap = buildingToFloorMap;
@@ -507,25 +620,26 @@ function loadShapesForBuildingAndFloor(building, floor) {
 							var s = now();
 							if(shapeId== "outline") {
 								path = p.path(shapePath).data(id, shapeId)
-								.attr({fill: "gray", "fill-opacity": .1, stroke: "white", "stroke-width": 2}).toBack();
+								.attr({fill: buildingOutlineColor, "fill-opacity": .1, stroke: "white", "stroke-width": 2}).toBack();
 							} else {
 								path = p.path(shapePath).data(id, shapeId);
 								var type = getTypeFromId(shapeId);
 								if(type == null) {
 									type = shape.id;
 								}
+								
 								switch(type) {
 									case GlobalStrings.ROOM:
-										path.attr({fill: "#E74C3C", "fill-opacity": .75, stroke: "white"});
+										path.attr({fill: typeToShapeColor.get(GlobalStrings.ROOM), "fill-opacity": .75, stroke: "white"});
 										break;
 									case GlobalStrings.BATHROOM_MENS:
-										path.attr({fill: "#2980b9", "fill-opacity": .75, stroke: "white"});
+										path.attr({fill: typeToShapeColor.get(GlobalStrings.BATHROOM_MENS), "fill-opacity": .75, stroke: "white"});
 										break;
 									case GlobalStrings.BATHROOM_WOMENS:
-										path.attr({fill: "#FF69B4", "fill-opacity": .75, stroke: "white"});
+										path.attr({fill: typeToShapeColor.get(GlobalStrings.BATHROOM_WOMENS), "fill-opacity": .75, stroke: "white"});
 										break;
 									default:
-										path.attr({fill: "#D2D7D3", "fill-opacity": .75, stroke: "white"});
+										path.attr({fill: defaultShapeColor, "fill-opacity": .75, stroke: "white"});
 										break;
 								}
 								
@@ -566,7 +680,7 @@ function loadShapesForBuildingAndFloor(building, floor) {
 						} else {
 							for (var k = 0, shapesLength = shapes.length; k < shapesLength; k++) {
 								var shape = shapes[k];
-								if(shape.id != "outline") {
+								if(shape.id != "outline" && shape.path != "") {
 									var bbox = Raphael.pathBBox(shape.path);
 									var centerX = bbox.x + (bbox.width / 2);
 									var centerY = bbox.y + (bbox.height / 2);
@@ -577,7 +691,7 @@ function loadShapesForBuildingAndFloor(building, floor) {
 					} else {
 						for (var k = 0, shapesLength = shapes.length; k < shapesLength; k++) {
 							var shape = shapes[k];
-							if(shape.id != "outline") {
+							if(shape.id != "outline" && shape.path != "") {
 								var bbox = Raphael.pathBBox(shape.path);
 								var centerX = bbox.x + (bbox.width / 2);
 								var centerY = bbox.y + (bbox.height / 2);
@@ -604,6 +718,17 @@ function loadShapesForBuildingAndFloor(building, floor) {
 	LOG.trace("Took " + (now()-start) + " ms to load shapes for " + building + " floor " + floor);
 }
 
+
+/**
+ * showShapesForBuildingAndFloor
+ * 
+ * Hides all displaying shapes and names and shows
+ * all shapes and names for passed in building and floor.
+ * Moves the paper shift and resizes to fit the building on screen.
+ * Also shows markers for building and floor if a graph is loaded
+ * @param building
+ * @param floor
+ */
 function showShapesForBuildingAndFloor(building, floor) {
 	loadShapesForBuildingAndFloor(GlobalStrings.ALL_BUILDINGS, floor);
 	var start = now();
@@ -680,11 +805,26 @@ function showShapesForBuildingAndFloor(building, floor) {
 	showingFloor = floor;
 }
 
+
+/**
+ * showShapesForCurrentBuildingAndFloor
+ * 
+ * Shows shapes for the set currentBuilding and currentFloor
+ */
 function showShapesForCurrentBuildingAndFloor() {
 	LOG.debug("Showing shapes for current building and floor");
 	showShapesForBuildingAndFloor(currentBuilding, currentFloor);
 }
 
+
+/**
+ * idIsType
+ * 
+ * Tests if an id is of a specified type
+ * @param id			The id to test the type of
+ * @param type			The type to test if the id is
+ * @returns {Boolean}	If the id is of the type passed in
+ */
 function idIsType(id, type) {
 	switch (type) {
 		case GlobalStrings.ROOM:
@@ -727,10 +867,32 @@ function idIsType(id, type) {
 				return true;
 			}
 			break;
+		case GlobalStrings.PARKING_LOT:
+			if (id.lastIndexOf(GlobalStrings.PARKING_LOT_ID + "_") > -1) {
+				return true;
+			}
+			break;
+		case GlobalStrings.DORM:
+			if (id.lastIndexOf(GlobalStrings.DORM_ID + "_") > -1) {
+				return true;
+			}
+			break;
+		case GlobalStrings.MISC:
+			if (id.lastIndexOf(GlobalStrings.MISC_ID + "_") > -1) {
+				return true;
+			}
+			break;
 	}
 	return false;
 }
 
+/**
+ * idIsValid
+ * 
+ * Test if an id is 'valid'. Meaning we can determine the type from the id
+ * @param id			The id to test if valid
+ * @returns {Boolean}	If the id of any known type
+ */
 function idIsValid(id) {
 	if (idIsType(id, GlobalStrings.ROOM)) {
 		return true;
@@ -756,16 +918,34 @@ function idIsValid(id) {
 	if (idIsType(id, GlobalStrings.BATHROOM_WOMENS)) {
 		return true;
 	}
+	if(idIsType(id, GlobalStrings.PARKING_LOT)) {
+		return true;
+	}
+	if(idIsType(id, GlobalStrings.DORM)) {
+		return true;
+	}
+	if(idIsType(id, GlobalStrings.MISC)) {
+		return true;
+	}
 	return false;
 }
 
+/**
+ * showPathsForMarker
+ * 
+ * Show all the paths that are connected to the marker
+ * in the passed in building and on the passed in floor
+ * @param marker		The marker to display all connected paths
+ * @param building		The building to limit shown paths
+ * @param floor			The floor to limit shown paths
+ */
 function showPathsForMarker(marker, building, floor) {
 	LOG.trace("Showing paths for marker " + marker.data(GlobalStrings.ID) + " building " + building + " floor " + floor);
 	var connectionMap = typeToConnectionMap.get(marker.data(GlobalStrings.TYPE)).get(marker);
 	if(connectionMap != null) {
 		var pMap = pathMap;
 		connectionMap.forEach(function(connection){
-			if(connection.marker.data(GlobalStrings.TYPE) == GlobalStrings.PATHWAY || 
+			if(markerTypesToAlwaysShow.contains(connection.marker.data(GlobalStrings.TYPE)) || 
 			((building == GlobalStrings.ALL_BUILDINGS || connection.marker.data(GlobalStrings.BUILDING)) && connection.marker.data(GlobalStrings.FLOOR) == floor)) {
 				var path = pMap.get(marker.data(GlobalStrings.ID) + "<->" + connection.marker.data(GlobalStrings.ID));
 				if(path == null) {
@@ -781,13 +961,22 @@ function showPathsForMarker(marker, building, floor) {
 	}
 }
 
+/**
+ * hidePathsForMarker
+ * 
+ * Hide all the paths that are connected to the marker
+ * in the passed in building and on the passed in floor
+ * @param marker		The marker to hide all connected paths
+ * @param building		The building to limit hidden paths
+ * @param floor			The floor to limit hidden paths
+ */
 function hidePathsForMarker(marker, building, floor) {
 	LOG.trace("Hiding paths for marker " + marker.data(GlobalStrings.ID) + " building " + building + " floor " + floor);
 	var connectionMap = typeToConnectionMap.get(marker.data(GlobalStrings.TYPE)).get(marker);
 	if(connectionMap != null) {
 		var pMap = pathMap;
 		connectionMap.forEach(function(connection){
-			if(connection.marker.data(GlobalStrings.TYPE) == GlobalStrings.PATHWAY || 
+			if(markerTypesToAlwaysShow.contains(connection.marker.data(GlobalStrings.TYPE)) || 
 			((building == GlobalStrings.ALL_BUILDINGS || connection.marker.data(GlobalStrings.BUILDING)) && connection.marker.data(GlobalStrings.FLOOR) == floor)) {
 				var path = pMap.get(marker.data(GlobalStrings.ID) + "<->" + connection.marker.data(GlobalStrings.ID));
 				if(path == null) {
@@ -803,13 +992,25 @@ function hidePathsForMarker(marker, building, floor) {
 	}
 }
 
-// Must run showShapesForCurrentBuildingAndFloor() before this
+/**
+ * showMarkersForCurrentBuildingAndFloor
+ * 
+ * ** Must run showShapesForCurrentBuildingAndFloor() before this **
+ */ 
 function showMarkersForCurrentBuildingAndFloor() {
 	LOG.debug("Showing markers for current building and floor");
 	showMarkersForBuildingAndFloor(currentBuilding, currentFloor);
 }
 
-// Must run showShapesForBuildingAndFloor(building, floor) before this
+/**
+ * showMarkersForBuildingAndFloor
+ * 
+ * ** Must run showShapesForBuildingAndFloor(building, floor) before this **
+ * 
+ * Show markers and paths for building and floor
+ * @param building
+ * @param floor
+ */
 function showMarkersForBuildingAndFloor(building, floor) {
 	loadMarkersForBuildingAndFloor(building, floor);
 	
@@ -820,7 +1021,8 @@ function showMarkersForBuildingAndFloor(building, floor) {
 		LOG.debug("Showing markers for building " + building + " floor " + floor);
 		allMarkers.forEach(function(markerMap) {
 			markerMap.forEach(function(markerId, marker) {
-				if(marker.data(GlobalStrings.TYPE) == GlobalStrings.PATHWAY || marker.data(GlobalStrings.TYPE) == GlobalStrings.PARKING_LOT) {
+				var markerType = marker.data(GlobalStrings.TYPE);
+				if(markerTypesToAlwaysShow.contains(markerType)) {
 					marker.show().toFront();
 				} else if((building == GlobalStrings.ALL_BUILDINGS || marker.data(GlobalStrings.BUILDING) == building) && marker.data(GlobalStrings.FLOOR) == floor) {
 					marker.show().toFront();
@@ -834,20 +1036,28 @@ function showMarkersForBuildingAndFloor(building, floor) {
 	LOG.trace("Took " + (new Date().getTime()-start) + " ms to show markers for " + building + " floor " + floor);
 }
 
-// Shows paths that HAVE have both endpoints in the building and floor
+/**
+ * showPathsForBuildingAndFloor
+ * 
+ * Shows paths that HAVE have BOTH endpoints in the building and floor
+ * @param building
+ * @param floor
+ */
 function showPathsForBuildingAndFloor(building, floor) {
 	LOG.trace("Showing paths for " + building + " floor " + floor);
 	if(!markersInvisible) {
 		pathMap.forEach(function(pathString, path){
+			var marker1Data = path.marker1Data;
+			var marker2Data = path.marker2Data;
 			if(building != GlobalStrings.ALL_BUILDINGS) {
-				if(path.marker1Data.type != GlobalStrings.PATHWAY && path.marker2Data.type != GlobalStrings.PATHWAY) {
-					if((path.marker1Data.building == building && path.marker1Data.floor == floor) && (path.marker2Data.building == building && path.marker2Data.floor == floor)) {
+				if(!markerTypesToAlwaysShow.contains(marker1Data.type) && !markerTypesToAlwaysShow.contains(marker2Data.type)) {
+					if((marker1Data.building == building && marker1Data.floor == floor) && (marker2Data.building == building && marker2Data.floor == floor)) {
 						path.element.show().toFront();
 					}
 				}
 			} else {
-				if(path.marker1Data.type != GlobalStrings.PATHWAY && path.marker2Data.type != GlobalStrings.PATHWAY) {
-					if(path.marker1Data.floor == floor && path.marker2Data.floor == floor) {
+				if(!markerTypesToAlwaysShow.contains(marker1Data.type) && !markerTypesToAlwaysShow.contains(marker2Data.type)) {
+					if(marker1Data.floor == floor && marker2Data.floor == floor) {
 						path.element.show().toFront();
 					}
 				}
@@ -856,19 +1066,27 @@ function showPathsForBuildingAndFloor(building, floor) {
 	}
 }
 
-// Hides paths that do NOT have both endpoints in the building and floor
+/**
+ * hidePathsForBuildingAndFloor
+ * 
+ * Hides paths that DO NOT HAVE BOTH endpoints in the building and floor
+ * @param building
+ * @param floor
+ */
 function hidePathsForBuildingAndFloor(building, floor) {
 	LOG.trace("Hiding paths for everything NOT " + building + " floor " + floor);
 	pathMap.forEach(function(pathString, path){
+		var marker1Data = path.marker1Data;
+		var marker2Data = path.marker2Data;
 		if(building != GlobalStrings.ALL_BUILDINGS) {
-			if(path.marker1Data.type != GlobalStrings.PATHWAY && path.marker2Data.type != GlobalStrings.PATHWAY) {
-				if((path.marker1Data.building != building || path.marker1Data.floor != floor) || (path.marker2Data.building != building || path.marker2Data.floor != floor)) {
+			if(!markerTypesToAlwaysShow.contains(marker1Data.type) && !markerTypesToAlwaysShow.contains(marker2Data.type)) {
+				if((marker1Data.building != building || marker1Data.floor != floor) || (marker2Data.building != building || marker2Data.floor != floor)) {
 					path.element.hide();
 				}
 			}
 		} else {
-			if(path.marker1Data.type != GlobalStrings.PATHWAY && path.marker2Data.type != GlobalStrings.PATHWAY) {
-				if(path.marker1Data.floor != floor && path.marker2Data.floor != floor) {
+			if(!markerTypesToAlwaysShow.contains(marker1Data.type) && !markerTypesToAlwaysShow.contains(marker2Data.type)) {
+				if(marker1Data.floor != floor && marker2Data.floor != floor) {
 					path.element.hide();
 				}
 			}
@@ -876,7 +1094,14 @@ function hidePathsForBuildingAndFloor(building, floor) {
 	});
 }
 
-// Must run loadShapesForBuildingAndFloor(building, floor) before this
+/**
+ * loadMarkersForBuildingAndFloor
+ * 
+ * ** Must run loadShapesForBuildingAndFloor(building, floor) before this **
+ * 
+ * @param building
+ * @param floor
+ */
 function loadMarkersForBuildingAndFloor(building, floor) {
 	var start = new Date().getTime();
 	var lbf = loadedBuildingsAndFloors;
@@ -937,23 +1162,29 @@ function loadMarkersForBuildingAndFloor(building, floor) {
 		pathMap.forEach(function(pathString, path) {
 			var marker1 = null;
 			var marker2 = null;
-			if(!getMarkerMapForType(path.marker1Data.type).containsKey(path.marker1Data.id)){
-				if(path.marker1Data.type != GlobalStrings.PATHWAY) {
-					if((building == GlobalStrings.ALL_BUILDINGS || path.marker1Data.building == building) && path.marker1Data.floor == floor) {
-						marker1 = getMarkerFromId(path.marker1Data.id);
+			var marker1Data = path.marker1Data;
+			var marker1Type = marker1Data.type;
+			var marker1Id = marker1Data.id;
+			var marker2Data = path.marker2Data;
+			var marker2Type = marker2Data.type;
+			var marker2Id = marker2Data.id;
+			if(!getMarkerMapForType(marker1Type).containsKey(marker1Id)){
+				if(!markerTypesToAlwaysShow.contains(marker1Type)) {
+					if((building == GlobalStrings.ALL_BUILDINGS || marker1Data.building == building) && marker1Data.floor == floor) {
+						marker1 = getMarkerFromId(marker1Id);
 						if (marker1 == null) {
-							marker1 = addMarker(path.marker1Data.cx, path.marker1Data.cy, markerTypeToColorMap.get(path.marker1Data.type));
-							marker1.data(GlobalStrings.ID, path.marker1Data.id);
-//							if (path.marker1Data.type == GlobalStrings.ROOM || path.marker1Data.type == GlobalStrings.BATHROOM_MENS || path.marker1Data.type == GlobalStrings.BATHROOM_WOMENS) {
-//								buildingToFloorMap.get(path.marker1Data.building).get(path.marker1Data.floor).get("shapes").forEach(function(element) {
+							marker1 = addMarker(marker1Data.cx, marker1Data.cy, markerTypeToColorMap.get(marker1Type));
+							marker1.data(GlobalStrings.ID, marker1Id);
+//							if (marker1Type == GlobalStrings.ROOM || marker1Type == GlobalStrings.BATHROOM_MENS || marker1Type == GlobalStrings.BATHROOM_WOMENS) {
+//								buildingToFloorMap.get(marker1Data.building).get(marker1Data.floor).get("shapes").forEach(function(element) {
 //									var show = element.isVisible();
 //									element.show();
 //
-//									if (!idIsValid(path.marker1Data.id) && element.data(GlobalStrings.ID) != "outline" && element.isPointInside(marker1.attr("cx"), marker1.attr("cy")) 
+//									if (!idIsValid(marker1Id) && element.data(GlobalStrings.ID) != "outline" && element.isPointInside(marker1.attr("cx"), marker1.attr("cy")) 
 //										&& idIsValid(element.data(GlobalStrings.ID))) {
-//										LOG.debug("Resetting marker id from " + path.marker1Data.id + " to " + element.data(GlobalStrings.ID));
+//										LOG.debug("Resetting marker id from " + marker1Id + " to " + element.data(GlobalStrings.ID));
 //										marker1.data(GlobalStrings.ID, element.data(GlobalStrings.ID));
-//										path.marker1Data.id = marker1.data(GlobalStrings.ID);
+//										marker1Id = marker1.data(GlobalStrings.ID);
 //										return false;
 //									}
 //
@@ -962,85 +1193,85 @@ function loadMarkersForBuildingAndFloor(building, floor) {
 //									}
 //								});
 //							}
-							marker1.data(GlobalStrings.TYPE, path.marker1Data.type);
-							marker1.data(GlobalStrings.BUILDING, path.marker1Data.building);
-							marker1.data(GlobalStrings.FLOOR, path.marker1Data.floor);
+							marker1.data(GlobalStrings.TYPE, marker1Type);
+							marker1.data(GlobalStrings.BUILDING, marker1Data.building);
+							marker1.data(GlobalStrings.FLOOR, marker1Data.floor);
 					
-							if(!getMarkerMapForType(marker1.data(GlobalStrings.TYPE)).containsKey(marker1.data(GlobalStrings.ID))) {
-								getMarkerMapForType(marker1.data(GlobalStrings.TYPE)).set(marker1.data(GlobalStrings.ID), marker1);
+							if(!getMarkerMapForType(marker1Type).containsKey(marker1.data(GlobalStrings.ID))) {
+								getMarkerMapForType(marker1Type).set(marker1.data(GlobalStrings.ID), marker1);
 							}
 							
-							if(!typeToConnectionMap.containsKey(marker1.data(GlobalStrings.TYPE))){
-								typeToConnectionMap.get(marker1.data(GlobalStrings.TYPE)).set(marker1, newConnectionSet());
+							if(!typeToConnectionMap.containsKey(marker1Type)){
+								typeToConnectionMap.get(marker1Type).set(marker1, newConnectionSet());
 							}
 
-							if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.DOOR) {
+							if (marker1Type == GlobalStrings.DOOR) {
 								doorIdCount++;
-							} else if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.HALLWAY) {
+							} else if (marker1Type == GlobalStrings.HALLWAY) {
 								hallwayIdCount++;
-							} else if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.PATHWAY) {
+							} else if (marker1Type == GlobalStrings.PATHWAY) {
 								pathwayIdCount++;
-							} else if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.STAIR) {
+							} else if (marker1Type == GlobalStrings.STAIR) {
 								stairIdCount++;
-							} else if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.ELEVATOR) {
+							} else if (marker1Type == GlobalStrings.ELEVATOR) {
 								elevatorIdCount++;
-							} else if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_MENS) {
+							} else if (marker1Type == GlobalStrings.BATHROOM_MENS) {
 								bathroomMensIdCount++;
-							} else if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_WOMENS) {
+							} else if (marker1Type == GlobalStrings.BATHROOM_WOMENS) {
 								bathroomWomensIdCount++;
 							}
 						}
 					}
 				} else {
-					marker1 = addMarker(path.marker1Data.cx, path.marker1Data.cy, markerTypeToColorMap.get(path.marker1Data.type));
-					marker1.data(GlobalStrings.ID, path.marker1Data.id);
-					marker1.data(GlobalStrings.TYPE, path.marker1Data.type);
+					marker1 = addMarker(marker1Data.cx, marker1Data.cy, markerTypeToColorMap.get(marker1Type));
+					marker1.data(GlobalStrings.ID, marker1Id);
+					marker1.data(GlobalStrings.TYPE, marker1Type);
 			
-					if(!getMarkerMapForType(marker1.data(GlobalStrings.TYPE)).containsKey(marker1.data(GlobalStrings.ID))) {
-						getMarkerMapForType(marker1.data(GlobalStrings.TYPE)).set(marker1.data(GlobalStrings.ID), marker1);
+					if(!getMarkerMapForType(marker1Type).containsKey(marker1.data(GlobalStrings.ID))) {
+						getMarkerMapForType(marker1Type).set(marker1.data(GlobalStrings.ID), marker1);
 					}
 					
-					if(!typeToConnectionMap.containsKey(marker1.data(GlobalStrings.TYPE))){
-						typeToConnectionMap.get(marker1.data(GlobalStrings.TYPE)).set(marker1, newConnectionSet());
+					if(!typeToConnectionMap.containsKey(marker1Type)){
+						typeToConnectionMap.get(marker1Type).set(marker1, newConnectionSet());
 					}
 
-					if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.DOOR) {
+					if (marker1Type == GlobalStrings.DOOR) {
 						doorIdCount++;
-					} else if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.HALLWAY) {
+					} else if (marker1Type == GlobalStrings.HALLWAY) {
 						hallwayIdCount++;
-					} else if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.PATHWAY) {
+					} else if (marker1Type == GlobalStrings.PATHWAY) {
 						pathwayIdCount++;
-					} else if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.STAIR) {
+					} else if (marker1Type == GlobalStrings.STAIR) {
 						stairIdCount++;
-					} else if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.ELEVATOR) {
+					} else if (marker1Type == GlobalStrings.ELEVATOR) {
 						elevatorIdCount++;
-					} else if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_MENS) {
+					} else if (marker1Type == GlobalStrings.BATHROOM_MENS) {
 						bathroomMensIdCount++;
-					} else if (marker1.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_WOMENS) {
+					} else if (marker1Type == GlobalStrings.BATHROOM_WOMENS) {
 						bathroomWomensIdCount++;
 					}
 				}
 			} else {
-				marker1 = getMarkerMapForType(path.marker1Data.type).get(path.marker1Data.id);
+				marker1 = getMarkerMapForType(marker1Type).get(marker1Id);
 			}
 			
-			if(!getMarkerMapForType(path.marker2Data.type).containsKey(path.marker2Data.id)){
-				if(path.marker2Data.type != GlobalStrings.PATHWAY) {
-					if((building == GlobalStrings.ALL_BUILDINGS || path.marker2Data.building == building) && path.marker2Data.floor == floor) {
-						marker2 = getMarkerFromId(path.marker2Data.id);
+			if(!getMarkerMapForType(marker2Type).containsKey(marker2Id)){
+				if(!markerTypesToAlwaysShow.contains(marker2Type)) {
+					if((building == GlobalStrings.ALL_BUILDINGS || marker2Data.building == building) && marker2Data.floor == floor) {
+						marker2 = getMarkerFromId(marker2Id);
 						if (marker2 == null) {
-							marker2 = addMarker(path.marker2Data.cx, path.marker2Data.cy, markerTypeToColorMap.get(path.marker2Data.type));
-							marker2.data(GlobalStrings.ID, path.marker2Data.id);
-//							if (path.marker2Data.type == GlobalStrings.ROOM || path.marker2Data.type == GlobalStrings.BATHROOM_MENS || path.marker2Data.type == GlobalStrings.BATHROOM_WOMENS) {
-//								buildingToFloorMap.get(path.marker2Data.building).get(path.marker2Data.floor).get("shapes").forEach(function(element) {
+							marker2 = addMarker(marker2Data.cx, marker2Data.cy, markerTypeToColorMap.get(marker2Type));
+							marker2.data(GlobalStrings.ID, marker2Id);
+//							if (marker2Type == GlobalStrings.ROOM || marker2Type == GlobalStrings.BATHROOM_MENS || marker2Type == GlobalStrings.BATHROOM_WOMENS) {
+//								buildingToFloorMap.get(marker2Data.building).get(marker2Data.floor).get("shapes").forEach(function(element) {
 //									var show = element.isVisible();
 //									element.show();
 //
-//									if (!idIsValid(path.marker2Data.id) && element.data(GlobalStrings.ID) != "outline" && element.isPointInside(marker2.attr("cx"), marker2.attr("cy")) 
+//									if (!idIsValid(marker2Id) && element.data(GlobalStrings.ID) != "outline" && element.isPointInside(marker2.attr("cx"), marker2.attr("cy")) 
 //										&& idIsValid(element.data(GlobalStrings.ID))) {
-//										LOG.debug("Resetting marker id from " + path.marker2Data.id + " to " + element.data(GlobalStrings.ID));
+//										LOG.debug("Resetting marker id from " + marker2Id + " to " + element.data(GlobalStrings.ID));
 //										marker2.data(GlobalStrings.ID, element.data(GlobalStrings.ID));
-//										path.marker2Data.id = marker2.data(GlobalStrings.ID);
+//										marker2Id = marker2.data(GlobalStrings.ID);
 //										return false;
 //									}
 //
@@ -1049,75 +1280,75 @@ function loadMarkersForBuildingAndFloor(building, floor) {
 //									} 
 //								});
 //							}
-							marker2.data(GlobalStrings.TYPE, path.marker2Data.type);
-							if (path.marker2Data.type != GlobalStrings.PATHWAY) {
-								marker2.data(GlobalStrings.BUILDING, path.marker2Data.building);
-								marker2.data(GlobalStrings.FLOOR, path.marker2Data.floor);
+							marker2.data(GlobalStrings.TYPE, marker2Type);
+							if (marker2Type != GlobalStrings.PATHWAY) {
+								marker2.data(GlobalStrings.BUILDING, marker2Data.building);
+								marker2.data(GlobalStrings.FLOOR, marker2Data.floor);
 							}
 							
-							if(!getMarkerMapForType(marker2.data(GlobalStrings.TYPE)).containsKey(marker2.data(GlobalStrings.ID))) {
-								getMarkerMapForType(marker2.data(GlobalStrings.TYPE)).set(marker2.data(GlobalStrings.ID), marker2);
+							if(!getMarkerMapForType(marker2Type).containsKey(marker2.data(GlobalStrings.ID))) {
+								getMarkerMapForType(marker2Type).set(marker2.data(GlobalStrings.ID), marker2);
 							}
 							
-							if(!typeToConnectionMap.containsKey(marker2.data(GlobalStrings.TYPE))){
-								typeToConnectionMap.get(marker2.data(GlobalStrings.TYPE)).set(marker2, newConnectionSet());
+							if(!typeToConnectionMap.containsKey(marker2Type)){
+								typeToConnectionMap.get(marker2Type).set(marker2, newConnectionSet());
 							}
 
-							if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.DOOR) {
+							if (marker2Type == GlobalStrings.DOOR) {
 								doorIdCount++;
-							} else if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.HALLWAY) {
+							} else if (marker2Type == GlobalStrings.HALLWAY) {
 								hallwayIdCount++;
-							} else if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.PATHWAY) {
+							} else if (marker2Type == GlobalStrings.PATHWAY) {
 								pathwayIdCount++;
-							} else if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.STAIR) {
+							} else if (marker2Type == GlobalStrings.STAIR) {
 								stairIdCount++;
-							} else if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.ELEVATOR) {
+							} else if (marker2Type == GlobalStrings.ELEVATOR) {
 								elevatorIdCount++;
-							} else if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_MENS) {
+							} else if (marker2Type == GlobalStrings.BATHROOM_MENS) {
 								bathroomMensIdCount++;
-							} else if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_WOMENS) {
+							} else if (marker2Type == GlobalStrings.BATHROOM_WOMENS) {
 								bathroomWomensIdCount++;
 							}
 						}
 					}
 				} else {
 
-					marker2 = addMarker(path.marker2Data.cx, path.marker2Data.cy, markerTypeToColorMap.get(path.marker2Data.type));
-					marker2.data(GlobalStrings.ID, path.marker2Data.id);
-					marker2.data(GlobalStrings.TYPE, path.marker2Data.type);
+					marker2 = addMarker(marker2Data.cx, marker2Data.cy, markerTypeToColorMap.get(marker2Type));
+					marker2.data(GlobalStrings.ID, marker2Id);
+					marker2.data(GlobalStrings.TYPE, marker2Type);
 			
-					if(!getMarkerMapForType(marker2.data(GlobalStrings.TYPE)).containsKey(marker2.data(GlobalStrings.ID))) {
-						getMarkerMapForType(marker2.data(GlobalStrings.TYPE)).set(marker2.data(GlobalStrings.ID), marker2);
+					if(!getMarkerMapForType(marker2Type).containsKey(marker2.data(GlobalStrings.ID))) {
+						getMarkerMapForType(marker2Type).set(marker2.data(GlobalStrings.ID), marker2);
 					}
 					
-					if(!typeToConnectionMap.containsKey(marker2.data(GlobalStrings.TYPE))){
-						typeToConnectionMap.get(marker2.data(GlobalStrings.TYPE)).set(marker2, newConnectionSet());
+					if(!typeToConnectionMap.containsKey(marker2Type)){
+						typeToConnectionMap.get(marker2Type).set(marker2, newConnectionSet());
 					}
 
-					if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.DOOR) {
+					if (marker2Type == GlobalStrings.DOOR) {
 						doorIdCount++;
-					} else if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.HALLWAY) {
+					} else if (marker2Type == GlobalStrings.HALLWAY) {
 						hallwayIdCount++;
-					} else if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.PATHWAY) {
+					} else if (marker2Type == GlobalStrings.PATHWAY) {
 						pathwayIdCount++;
-					} else if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.STAIR) {
+					} else if (marker2Type == GlobalStrings.STAIR) {
 						stairIdCount++;
-					} else if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.ELEVATOR) {
+					} else if (marker2Type == GlobalStrings.ELEVATOR) {
 						elevatorIdCount++;
-					} else if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_MENS) {
+					} else if (marker2Type == GlobalStrings.BATHROOM_MENS) {
 						bathroomMensIdCount++;
-					} else if (marker2.data(GlobalStrings.TYPE) == GlobalStrings.BATHROOM_WOMENS) {
+					} else if (marker2Type == GlobalStrings.BATHROOM_WOMENS) {
 						bathroomWomensIdCount++;
 					}
 				
 				}
 			} else {
-				marker2 = getMarkerMapForType(path.marker2Data.type).get(path.marker2Data.id);
+				marker2 = getMarkerMapForType(marker2Type).get(marker2Id);
 			}
 
 			if(marker1 != null && marker2 != null) {
-				var marker1ConnectionMap = getConnectionMapForType(marker1.data(GlobalStrings.TYPE));
-				var marker2ConnectionMap = getConnectionMapForType(marker2.data(GlobalStrings.TYPE));
+				var marker1ConnectionMap = getConnectionMapForType(marker1Type);
+				var marker2ConnectionMap = getConnectionMapForType(marker2Type);
 
 				var connectionSet = marker1ConnectionMap.get(marker1);
 				if (connectionSet == null) {
@@ -1158,6 +1389,14 @@ function loadMarkersForBuildingAndFloor(building, floor) {
 	LOG.trace("Took " + (new Date().getTime()-start) + " ms to load markers for " + building + " floor " + floor);
 }
 
+/**
+ * setMarkersInvisible
+ * 
+ * Show or hide markers and paths.
+ * Passing in false will hide all markers and paths
+ * and make sure none show up in the future
+ * @param bool
+ */
 function setMarkersInvisible(bool) {
 	LOG.trace("Setting markers invisible");
 	markersInvisible = bool;
@@ -1180,10 +1419,24 @@ function isDictionaryLoaded() {
 	return dictionaryLoaded;
 }
 
+/**
+ * getMarkerMapForType
+ * 
+ * Get the marker map for the passed in type
+ * @param type	The type of the marker map to get
+ * @returns	The marker map for the passed in type
+ */
 function getMarkerMapForType(type) {
 	return typeToMarkerMap.get(type);
 }
 
+/**
+ * getMarkerFromId
+ * 
+ * Find and return the marker object given the id
+ * @param id	Id of the marker to return
+ * @returns		The marker
+ */
 function getMarkerFromId(id) {
 	var returnMarker = null;
 
@@ -1197,6 +1450,15 @@ function getMarkerFromId(id) {
 	return returnMarker;
 }
 
+/**
+ * addMarker
+ * 
+ * Creates a new marker
+ * @param x			X coordinate of the marker
+ * @param y			Y coordinate of the marker
+ * @param color		Color of the marker
+ * @returns			The created marker
+ */
 function addMarker(x, y, color) {
 	var marker = paper.circle(x, y, markerSize).attr({
 		fill: color
@@ -1211,12 +1473,27 @@ function addMarker(x, y, color) {
 	return marker;
 }
 
+/**
+ * newConnectionMap
+ * 
+ * Creates a connection map that will take
+ * a marker object as the key and use the marker's
+ * id to compare
+ * @returns {buckets.Dictionary}	The created map
+ */
 function newConnectionMap() {
 	return new buckets.Dictionary(function markerToString(marker) {
 		return marker.data(GlobalStrings.ID);
 	});
 }
 
+/**
+ * getConnectionMapForType
+ * 
+ * Get the connection map for the passed in type
+ * @param type	The type of the connection map to get
+ * @returns		The connection map
+ */
 function getConnectionMapForType(type) {
 	return typeToConnectionMap.get(type);
 }
@@ -1227,10 +1504,28 @@ function newConnectionSet() {
 	});
 }
 
+/**
+ * getDistance
+ * 
+ * Calculate the distance between 2 markers
+ * @param marker1	
+ * @param marker2	
+ * @returns	The distance between the 2 markers
+ */
 function getDistance(marker1, marker2) {
 	return dist(marker1.attr("cx"), marker1.attr("cy"), marker2.attr("cx"), marker2.attr("cy"));
 }
 
+/**
+ * dist
+ * 
+ * Calculate the distance between 2 coordinate points
+ * @param point1X	X coordinate for point 1
+ * @param point1Y	Y coordinate for point 1
+ * @param point2X	X coordinate for point 2
+ * @param point2Y	Y coordinate for point 2
+ * @returns			The distance between the 2 points
+ */
 function dist(point1X, point1Y, point2X, point2Y) {
 	var xs = 0;
 	var ys = 0;
@@ -1244,6 +1539,14 @@ function dist(point1X, point1Y, point2X, point2Y) {
 	return Math.floor(Math.sqrt(xs + ys));
 }
 
+/**
+ * resizeToFitShapesForBuildingAndFloor
+ * 
+ * Resize the paper to show the passed in building
+ * and floor scaled to fill the view box
+ * @param building
+ * @param floor
+ */
 function resizeToFitShapesForBuildingAndFloor(building, floor) {
 	var start = now();
 	var lowerLeftY;
@@ -1275,6 +1578,12 @@ function resizeToFitShapesForBuildingAndFloor(building, floor) {
 	LOG.trace("Took " + (now()-start) + " ms to resize to fit shapes for " + building + " floor " + floor);
 }
 
+/**
+ * zoomIn
+ * 
+ * Zoom the paper in
+ * @param zoomFactor	An optional zoomFactor. Must be < 1 if used. Else .90 is used
+ */
 function zoomIn(zoomFactor) {
 	var resizeRatio;
 	if(zoomFactor != null && zoomFactor < 1) {
@@ -1286,6 +1595,12 @@ function zoomIn(zoomFactor) {
 	zoom(resizeRatio);
 }
 
+/**
+ * zoomOut
+ * 
+ * Zoom the paper out
+ * @param zoomFactor	An option zoomFactor. Must be > 1 if used. Else 1.1 is used
+ */
 function zoomOut(zoomFactor) {
 	var resizeRatio;
 	if(zoomFactor != null && zoomFactor > 1) {
@@ -1297,6 +1612,12 @@ function zoomOut(zoomFactor) {
 	zoom(resizeRatio);
 }
 
+/**
+ * zoom
+ * 
+ * Zoom the paper with the passed in resize ratio
+ * @param resizeRatio	The ratio to resize. < 1 zooms in, > 1 zooms out
+ */
 function zoom(resizeRatio) {
 	var oldResizeRatio = paperResizeRatio;
 	paperResizeRatio *= resizeRatio;
@@ -1334,6 +1655,12 @@ function zoom(resizeRatio) {
 	paper.setViewBox(paperShiftX, paperShiftY, paperWidth, paperHeight, true);
 }
 
+/**
+ * executeOnAllMarkers
+ * 
+ * Passes every marker of all types into the given function
+ * @param func	The function to be called with each marker as a param
+ */
 function executeOnAllMarkers(func) {
 	allMarkers.forEach(function(markerMap) {
 		markerMap.forEach(function(markerId, marker) {
@@ -1351,6 +1678,13 @@ function getMarkerColorFromType(type) {
 	return color;
 }
 
+/**
+ * getBuildingFromId
+ * 
+ * Given an id, returns the building. i.e. bldg_dion_flr_1_rm_101 will return 'dion'
+ * @param id	The id to extract the building from
+ * @returns		The building
+ */
 function getBuildingFromId(id) {
 	if(id.search(GlobalStrings.PATHWAY_ID) == -1) {
 		var parts = id.split("_");
@@ -1363,6 +1697,13 @@ function getBuildingFromId(id) {
 	return "";
 }
 
+/**
+ * getFloorFromId
+ * 
+ * Given an id, returns the floor. i.e. bldg_dion_flr_1_rm_101 will return 1
+ * @param id	The id to extract the floor from
+ * @returns		The floor
+ */
 function getFloorFromId(id) {
 	if(id.search(GlobalStrings.PATHWAY_ID) == -1) {
 		var parts = id.split("_");
@@ -1376,20 +1717,63 @@ function getFloorFromId(id) {
 	}
 }
 
+/**
+ * getRoomFromRoomId
+ * 
+ * Given an id, returns the room. i.e. bldg_dion_flr_1_rm_101 will return 101
+ * @param id	The id to extract the room from
+ * @returns		The room
+ */
 function getRoomFromRoomId(roomId) {
 	return roomId.substr(roomId.lastIndexOf(GlobalStrings.ROOM_ID + "_") + (GlobalStrings.ROOM_ID + "_").length);
 }
 
+/**
+ * getParkingLotFromId
+ * 
+ * Given an id, returns the parking lot. i.e. lot_1 will return 1
+ * @param id	The id to extract the parking lot from
+ * @returns		The parking lot
+ */
 function getParkingLotFromId(parkingLotId) {
 	return parkingLotId.substr(parkingLotId.lastIndexOf(GlobalStrings.PARKING_LOT_ID + "_") + (GlobalStrings.PARKING_LOT_ID + "_").length);
 }
 
+/**
+ * getDormFromId
+ * 
+ * Given an id, returns the dorm. i.e. dorm_hickory will return hickory
+ * @param id	The id to extract the dorm from
+ * @returns		The dorm
+ */
+function getDormFromId(dormId) {
+	return dormId.substr(dormId.lastIndexOf(GlobalStrings.DORM_ID + "_") + (GlobalStrings.DORM_ID + "_").length);
+}
+
+/**
+ * getMiscFromId
+ * 
+ * Given an id, returns the misc id. i.e. misc_campanile will return campanile
+ * @param id	The id to extract the misc id from
+ * @returns		The misc id
+ */
+function getMiscFromId(miscId) {
+	return miscId.substr(miscId.lastIndexOf(GlobalStrings.MISC_ID + "_") + (GlobalStrings.MISC_ID + "_").length);
+}
+
+/**
+ * getClosestMarkerToPoint
+ * 
+ * Given the passed in x,y coordinate, find the closest marker
+ * to the point
+ * @return	The closest marker to the passed in coordinates
+ */
 function getClosestMarkerToPoint(x, y) {
 	var closestMarker;
 	var closestDistance;
 	allMarkers.forEach(function(markerMap){
 		markerMap.forEach(function(markerId, marker){
-			if(marker.data(GlobalStrings.TYPE) != GlobalStrings.PATHWAY && marker.data(GlobalStrings.TYPE) != GlobalStrings.PARKING_LOT) {
+			if(!markerTypesToAlwaysShow.contains(marker.data(GlobalStrings.TYPE))) {
 				if(currentBuilding == GlobalStrings.ALL_BUILDINGS || currentBuilding == marker.data(GlobalStrings.BUILDING)) {
 					if(currentFloor == marker.data(GlobalStrings.FLOOR)) {
 						var distance = dist(x, y, marker.attr("cx"), marker.attr("cy"));
@@ -1511,6 +1895,13 @@ function formatMiscId(misc) {
 	return GlobalStrings.MISC_ID + "_" + misc;
 }
 
+/**
+ * getTypeFromId
+ * 
+ * Given an id, find the type
+ * @param id
+ * @returns		The type
+ */
 function getTypeFromId(id) {
 	if(id.search(GlobalStrings.PATHWAY_ID) == -1) {
 		if(id.search(GlobalStrings.PARKING_LOT_ID) == -1) {
@@ -1617,7 +2008,7 @@ function hashCode(str) {
 		hash = ((hash<<5)-hash)+char;
 		hash = hash & hash;
 	}
-	console.log("Took " + (now()-start) + " ms to get hash of " + str + ": " + hash);
+	LOG.trace("Took " + (now()-start) + " ms to get hash of " + str + ": " + hash);
 	return hash;
 }
 
@@ -1642,32 +2033,44 @@ function resetRaphaelSize() {
 	paper.setSize($(raphaelDivJQuery).width(), $(raphaelDivJQuery).height());
 }
 
-function getLocation() {
-    if (navigator.geolocation) {
-        closestMarker=navigator.geolocation.getCurrentPosition(showPosition);
-        return closestMarker;
-    } else {
-    	 //$("#where_button").text("I have failed");      
-    }
-
+function getFloorDifferenceFromId(id1, id2){
+	return getFloorFromId(id2) - getFloorFromId(id1);
 }
 
-function showPosition(position) {
-    
-    //$("#where_button").text("I have failed2");
-   // $("#where_button").text(position.coords.latitude+", "+position.coords.longitude);
+//**** TODO: GPS integration work. INCOMPLETE **** //
+function getLocation() {
+    if (navigator.geolocation) {  	
+        closestMarker=navigator.geolocation.getCurrentPosition(showPosition, error, {enableHighAccuracy:true});
+        return closestMarker;
+    } else {
+    	  
+    }
+}
+function error(zeta){
 
+}
+function showPosition(position) {
+	console.log(position.coords.accuracy);
     closestMarker=gpsToMapCoordConverter(position.coords.latitude, position.coords.longitude);
    	return closestMarker;
     
 }
-
 function  gpsToMapCoordConverter(lat, longi){
 	var tempoX;
 	var tempoY;
-
+	console.log(lat+", "+longi);
 	tempoX=longi*563232+3.99986*10000000+42;
 	tempoY=lat*(-747010)+3.11021*10000000+62;
+	console.log(tempoX+", "+tempoY);
+	paper.circle(tempoX,tempoY,10).attr("fill","red");
 	closestMarker=getClosestMarkerToPoint(tempoX, tempoY);
+	
 	return closestMarker;
 }
+function testGps(){
+
+	selectedFromMarkerOnMap=getLocation();
+	selectedFromMarkerOnMap.show();
+
+}
+// ********************************************** //

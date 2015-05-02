@@ -113,7 +113,7 @@ public class DictionaryUploadServlet extends HttpServlet {
 					System.out.println("Old name change map exists");
 					if(!FileUtils.readFileToString(oldNameChangeMapFile).equals(nameChangeMapJson)) {
 						saveNameChangeMapFile = true;
-						FileUtils.moveFile(oldDictionary, new File(dictionaryDir, "nameChangeMap.js."+format.format(new Date(sessionTime))));
+						FileUtils.moveFile(oldNameChangeMapFile, new File(dictionaryDir, "nameChangeMap.js."+format.format(new Date(sessionTime))));
 						System.out.println("Moved old dictionary to nameChangeMap.js." + format.format(new Date(sessionTime)));
 					} else {
 						// No changes were made

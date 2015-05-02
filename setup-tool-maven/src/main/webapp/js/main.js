@@ -172,7 +172,7 @@ function changeBuildingFloor() {
 		directionsHTML = $("#dialog_modal").html();
 	}
 	var buildingFloorContent = [];
-	buildingFloorContent.push("<form id='change_building_floor_form' onchange='changeBuildingFloorChanged()' change='changeBuildingFloorChanged()'>");
+	buildingFloorContent.push("<form id='change_building_floor_form'>");
 	buildingFloorContent.push("<div class='form-group'>");
 	buildingFloorContent.push("<label for='building_selector'>Building</label>");
 	buildingFloorContent.push("<select class='form-control' id='building_selector' name='building' class='form-control'>");
@@ -231,13 +231,15 @@ function changeBuildingFloorChanged() {
 	var selectedBuilding;
 	if ($("#building_selector").val() == GlobalStrings.ALL_BUILDINGS_DISPLAY) {
 		selectedBuilding = GlobalStrings.ALL_BUILDINGS;
+	} else {
+		buildingShortToLongNameMap.forEach(function(short, long) {
+			if (long == $("#building_selector").val()) {
+				selectedBuilding = short;
+				return false;
+			}
+		});
 	}
-	buildingShortToLongNameMap.forEach(function(short, long) {
-		if (long == $("#building_selector").val()) {
-			selectedBuilding = short;
-			return false;
-		}
-	});
+	
 	var selectedFloor = $("#floor_selector").val();
 	if (selectedBuilding != currentBuilding) {
 		if (selectedBuilding != GlobalStrings.ALL_BUILDINGS) {
@@ -252,62 +254,49 @@ function changeBuildingFloorChanged() {
 			} else {
 				newFloor = floorList.first();
 			}
-
-			changedFloor = newFloor;
+			currentFloor = newFloor;
 		}
-
-		changedBuilding = selectedBuilding;
+		
+		currentBuilding = selectedBuilding;
 	} else {
 		// Floor changed
-		changedFloor = selectedFloor;
+		currentFloor = selectedFloor;
 	}
 	
-	setFloorSelectorForBuilding(changedBuilding == null ? currentBuilding : changedBuilding, changedFloor == null ? currentFloor : changedFloor);
+	setFloorSelectorForBuilding(currentBuilding, currentFloor);
 }
 
 function changeBuildingFloorSubmit() {
-	var reload = false;
-	if(changedBuilding != null) {
-		reload = true;
-		currentBuilding = changedBuilding;
-	}
-	if(changedFloor != null) {
-		reload = true;
-		currentFloor = changedFloor;
-	}
-	if(reload) {
-		showLoading();
-		
-		setTimeout(function() {
-			showShapesForCurrentBuildingAndFloor();
-			showRaphael();
-		}, 50);
-	}
+	showLoading();
+	
+	setTimeout(function() {
+		showShapesForCurrentBuildingAndFloor();
+		showRaphael();
+	}, 50);
+	
 	hideChangeBuildingFloorModal();
 }
 
 function setFloorSelectorForBuilding(building, selectedFloor) {
 	var optionsHtml = "";
 	if (building == GlobalStrings.ALL_BUILDINGS) {
-		if (currentBuilding == GlobalStrings.ALL_BUILDINGS) {
-			var lowFloor;
-			var topFloor;
-			buildingToFloorIdsMap.forEach(function(building, floorList) {
-				floorList.forEach(function(floor) {
-					if (lowFloor == null || floor < lowFloor) {
-						lowFloor = floor;
-					}
-					if (topFloor == null || floor > topFloor) {
-						topFloor = floor;
-					}
-				});
-			});
-
-			if (lowFloor != null && topFloor != null) {
-				for (var i = lowFloor; i <= topFloor; i++) {
-					var floor = i;
-					optionsHtml += "<option id='" + floor + "' " + (selectedFloor == floor ? "selected='true'" : "") + ">" + floor + "</option>";
+		var lowFloor;
+		var topFloor;
+		buildingToFloorIdsMap.forEach(function(building, floorList) {
+			floorList.forEach(function(floor) {
+				if (lowFloor == null || floor < lowFloor) {
+					lowFloor = floor;
 				}
+				if (topFloor == null || floor > topFloor) {
+					topFloor = floor;
+				}
+			});
+		});
+		
+		if (lowFloor != null && topFloor != null) {
+			for (var i = lowFloor; i <= topFloor; i++) {
+				var floor = i;
+				optionsHtml += "<option id='" + floor + "' " + (selectedFloor == floor ? "selected='true'" : "") + ">" + floor + "</option>";
 			}
 		}
 	} else {
@@ -336,14 +325,14 @@ function getDirections() {
 		menuHTML.push("<label for='directions_from_type'>From (<span><a href='#' onclick='selectFromOnMap()'>Select On Map</a></span>)</label>");
 		menuHTML.push("<select class='form-control' id='directions_from_type' name='directions_from_type' onchange='directionsFromTypeChange()'>");
 		menuHTML.push("<option value='select_type'>Select Type</option>");
-		menuHTML.push(defaultDirectionsTypeHTML()); 
+		menuHTML.push(defaultDirectionsTypeHTML(null, false)); 
 		menuHTML.push("</select>");
 		menuHTML.push("</div>");
 		menuHTML.push("<div id='directions_to'>");
 		menuHTML.push("<label for='directions_to_type'>To (<span><a href='#' onclick='selectToOnMap()'>Select On Map</a></span>)</label>");
 		menuHTML.push("<select class='form-control' id='directions_to_type' name='directions_to_type' onchange='directionsToTypeChange()'>");
 		menuHTML.push("<option value='select_type'>Select Type</option>");
-		menuHTML.push(defaultDirectionsTypeHTML()); 
+		menuHTML.push(defaultDirectionsTypeHTML(null, true)); 
 		menuHTML.push("</select>");
 		menuHTML.push("</div>");
 		menuHTML.push("<div class='form-group'>");
@@ -396,7 +385,7 @@ function directionsFromTypeChange() {
 			var floorSelected = $("#directions_from_floor option:selected").val();
 			var roomSelected = $("#directions_from_room option:selected").val();
 			
-			html.push(defaultDirectionsTypeHTML(GlobalStrings.BUILDING) + "</select>");
+			html.push(defaultDirectionsTypeHTML(GlobalStrings.BUILDING, false) + "</select>");
 			html.push("<select class='form-control' id='directions_from_building' name='directions_from_building' onchange='directionsFromTypeChange()'>");
 			if(buildingSelected === undefined) {
 				html.push("<option value='select_building' selected='true'>Select Building</option>");
@@ -442,11 +431,6 @@ function directionsFromTypeChange() {
 							buildingToRoomNamesMap.get(buildingSelected).get(floorSelected).forEach(function(name) {
 								html.push("<option value='" + formatRoomId(buildingSelected, floorSelected, name) + "'>" + name + "</option>");
 							});
-//							typeToMarkerMap.get(GlobalStrings.ROOM).forEach(function(markerId, marker){
-//								if(marker.data(GlobalStrings.BUILDING) == buildingSelected && marker.data(GlobalStrings.FLOOR) == floorSelected){
-//									html.push("<option value='" + markerId + "'>" + getRoomFromRoomId(markerId) + "</option>");
-//								}
-//							});
 							html.push("</select>");
 						} else {
 							directionsFromFloor = floorSelected;
@@ -456,22 +440,12 @@ function directionsFromTypeChange() {
 								buildingToRoomNamesMap.get(buildingSelected).get(floorSelected).forEach(function(name) {
 									html.push("<option value='" + formatRoomId(buildingSelected, floorSelected, name) + "'>" + name + "</option>");
 								});
-//								typeToMarkerMap.get(GlobalStrings.ROOM).forEach(function(markerId, marker){
-//									if(marker.data(GlobalStrings.BUILDING) == buildingSelected && marker.data(GlobalStrings.FLOOR) == floorSelected){
-//										html.push("<option value='" + markerId + "'>" + getRoomFromRoomId(markerId) + "</option>");
-//									}
-//								});
 								html.push("</select>");
 							} else {
 								directionsFromRoom = getRoomFromRoomId(roomSelected);
 								buildingToRoomNamesMap.get(buildingSelected).get(floorSelected).forEach(function(name) {
 									html.push("<option value='" + formatRoomId(buildingSelected, floorSelected, name) + "'"+(directionsFromRoom == name ? " selected='true'" : "")+">" + name + "</option>");
 								});
-//								typeToMarkerMap.get(GlobalStrings.ROOM).forEach(function(markerId, marker){
-//									if(marker.data(GlobalStrings.BUILDING) == buildingSelected && marker.data(GlobalStrings.FLOOR) == floorSelected){
-//										html.push("<option value='" + markerId + "'"+(directionsFromRoom == getRoomFromRoomId(markerId) ? " selected='true'" : "")+">" + getRoomFromRoomId(markerId) + "</option>");
-//									}
-//								});
 								html.push("</select>");
 							}
 						}
@@ -486,7 +460,7 @@ function directionsFromTypeChange() {
 			directionsFromParkingLot = null;
 			directionsFromDorm = null;
 			directionsFromMisc = null;
-			html.push(defaultDirectionsTypeHTML(GlobalStrings.PARKING_LOT) + "</select>");
+			html.push(defaultDirectionsTypeHTML(GlobalStrings.PARKING_LOT, false) + "</select>");
 			var parkingLotSelected = $("#directions_from_parking_lot option:selected").val();
 			html.push("<select class='form-control' id='directions_from_parking_lot' name='directions_from_parking_lot' onchange='directionsFromTypeChange()'>");
 			if(parkingLotSelected === undefined) {
@@ -509,7 +483,21 @@ function directionsFromTypeChange() {
 			directionsFromParkingLot = null;
 			directionsFromDorm = null;
 			directionsFromMisc = null;
-			html.push(defaultDirectionsTypeHTML(GlobalStrings.DORM) + "</select>");
+			html.push(defaultDirectionsTypeHTML(GlobalStrings.DORM, false) + "</select>");
+			var dormSelected = $("#directions_from_dorm option:selected").val();
+			html.push("<select class='form-control' id='directions_from_dorm' name='directions_from_dorm' onchange='directionsFromTypeChange()'>");
+			if(dormSelected === undefined) {
+				html.push("<option value='select_dorm' selected='true'>Select Dorm</option>");
+				getMarkerMapForType(GlobalStrings.DORM).forEach(function(markerId, marker){
+					html.push("<option value='"+markerId+"'>"+getDormFromId(markerId)+"</option>");
+				});
+				html.push("</select>");
+			} else {
+				getMarkerMapForType(GlobalStrings.DORM).forEach(function(markerId, marker){
+					html.push("<option value='"+markerId+"'"+(dormSelected==markerId ? " selected='true'" : "")+">"+getDormFromId(markerId)+"</option>");
+				});
+				html.push("</select>");
+			}
 		} else if(fromType == GlobalStrings.MISC) {
 			directionsFromType = GlobalStrings.MISC;
 			directionsFromBuilding = null;
@@ -518,10 +506,24 @@ function directionsFromTypeChange() {
 			directionsFromParkingLot = null;
 			directionsFromDorm = null;
 			directionsFromMisc = null;
-			html.push(defaultDirectionsTypeHTML(GlobalStrings.MISC) + "</select>");
+			html.push(defaultDirectionsTypeHTML(GlobalStrings.MISC, false) + "</select>");
+			var miscSelected = $("#directions_from_misc option:selected").val();
+			html.push("<select class='form-control' id='directions_from_misc' name='directions_from_misc' onchange='directionsFromTypeChange()'>");
+			if(miscSelected === undefined) {
+				html.push("<option value='select_misc' selected='true'>Select Misc</option>");
+				getMarkerMapForType(GlobalStrings.MISC).forEach(function(markerId, marker){
+					html.push("<option value='"+markerId+"'>"+getMiscFromId(markerId)+"</option>");
+				});
+				html.push("</select>");
+			} else {
+				getMarkerMapForType(GlobalStrings.MISC).forEach(function(markerId, marker){
+					html.push("<option value='"+markerId+"'"+(miscSelected==markerId ? " selected='true'" : "")+">"+getMiscFromId(markerId)+"</option>");
+				});
+				html.push("</select>");
+			}
 		} else {
 			html.push("<option value='select_type'>Select Type</option>");
-			html.push(defaultDirectionsTypeHTML()); 
+			html.push(defaultDirectionsTypeHTML(null, false)); 
 			html.push("</select>");
 		}
 	}
@@ -544,7 +546,7 @@ function directionsToTypeChange() {
 			var floorSelected = $("#directions_to_floor option:selected").val();
 			var roomSelected = $("#directions_to_room option:selected").val();
 			
-			html.push(defaultDirectionsTypeHTML(GlobalStrings.BUILDING) + "</select>");
+			html.push(defaultDirectionsTypeHTML(GlobalStrings.BUILDING, true) + "</select>");
 			html.push("<select class='form-control' id='directions_to_building' name='directions_to_building' onchange='directionsToTypeChange()'>");
 			if(buildingSelected === undefined) {
 				html.push("<option value='select_building' selected='true'>Select Building</option>");
@@ -591,11 +593,6 @@ function directionsToTypeChange() {
 							buildingToRoomNamesMap.get(buildingSelected).get(floorSelected).forEach(function(name) {
 								html.push("<option value='" + formatRoomId(buildingSelected, floorSelected, name) + "'>" + name + "</option>");
 							});
-//							typeToMarkerMap.get(GlobalStrings.ROOM).forEach(function(markerId, marker){
-//								if(marker.data(GlobalStrings.BUILDING) == buildingSelected && marker.data(GlobalStrings.FLOOR) == floorSelected){
-//									html.push("<option value='" + markerId + "'>" + getRoomFromRoomId(markerId) + "</option>");
-//								}
-//							});
 							html.push("</select>");
 						} else {
 							directionsToFloor = floorSelected;
@@ -605,22 +602,12 @@ function directionsToTypeChange() {
 								buildingToRoomNamesMap.get(buildingSelected).get(floorSelected).forEach(function(name) {
 									html.push("<option value='" + formatRoomId(buildingSelected, floorSelected, name) + "'>" + name + "</option>");
 								});
-//								typeToMarkerMap.get(GlobalStrings.ROOM).forEach(function(markerId, marker){
-//									if(marker.data(GlobalStrings.BUILDING) == buildingSelected && marker.data(GlobalStrings.FLOOR) == floorSelected){
-//										html.push("<option value='" + markerId + "'>" + getRoomFromRoomId(markerId) + "</option>");
-//									}
-//								});
 								html.push("</select>");
 							} else {
 								directionsToRoom = getRoomFromRoomId(roomSelected);
 								buildingToRoomNamesMap.get(buildingSelected).get(floorSelected).forEach(function(name) {
 									html.push("<option value='" + formatRoomId(buildingSelected, floorSelected, name) + "'"+(directionsFromRoom == name ? " selected='true'" : "")+">" + name + "</option>");
 								});
-//								typeToMarkerMap.get(GlobalStrings.ROOM).forEach(function(markerId, marker){
-//									if(marker.data(GlobalStrings.BUILDING) == buildingSelected && marker.data(GlobalStrings.FLOOR) == floorSelected){
-//										html.push("<option value='" + markerId + "'"+(directionsToRoom == getRoomFromRoomId(markerId) ? " selected='true'" : "")+">" + getRoomFromRoomId(markerId) + "</option>");
-//									}
-//								});
 								html.push("</select>");
 							}
 						}
@@ -635,7 +622,7 @@ function directionsToTypeChange() {
 			directionsToParkingLot = null;
 			directionsToDorm = null;
 			directionsToMisc = null;
-			html.push(defaultDirectionsTypeHTML(GlobalStrings.PARKING_LOT) + "</select>");
+			html.push(defaultDirectionsTypeHTML(GlobalStrings.PARKING_LOT, true) + "</select>");
 			var parkingLotSelected = $("#directions_to_parking_lot option:selected").val();
 			html.push("<select class='form-control' id='directions_to_parking_lot' name='directions_to_parking_lot' onchange='directionsToTypeChange()'>");
 			if(parkingLotSelected === undefined) {
@@ -658,7 +645,21 @@ function directionsToTypeChange() {
 			directionsToParkingLot = null;
 			directionsToDorm = null;
 			directionsToMisc = null;
-			html.push(defaultDirectionsTypeHTML(GlobalStrings.DORM) + "</select>");
+			html.push(defaultDirectionsTypeHTML(GlobalStrings.DORM, true) + "</select>");
+			var dormSelected = $("#directions_to_dorm option:selected").val();
+			html.push("<select class='form-control' id='directions_to_dorm' name='directions_to_dorm' onchange='directionsToTypeChange()'>");
+			if(dormSelected === undefined) {
+				html.push("<option value='select_dorm' selected='true'>Select Dorm</option>");
+				getMarkerMapForType(GlobalStrings.DORM).forEach(function(markerId, marker){
+					html.push("<option value='"+markerId+"'>"+getDormFromId(markerId)+"</option>");
+				});
+				html.push("</select>");
+			} else {
+				getMarkerMapForType(GlobalStrings.DORM).forEach(function(markerId, marker){
+					html.push("<option value='"+markerId+"'"+(dormSelected==markerId ? " selected='true'" : "")+">"+getDormFromId(markerId)+"</option>");
+				});
+				html.push("</select>");
+			}
 		} else if(toType == GlobalStrings.MISC) {
 			directionsToType = GlobalStrings.MISC;
 			directionsToBuilding = null;
@@ -667,10 +668,24 @@ function directionsToTypeChange() {
 			directionsToParkingLot = null;
 			directionsToDorm = null;
 			directionsToMisc = null;
-			html.push(defaultDirectionsTypeHTML(GlobalStrings.MISC) + "</select>");
+			html.push(defaultDirectionsTypeHTML(GlobalStrings.MISC, true) + "</select>");
+			var miscSelected = $("#directions_to_misc option:selected").val();
+			html.push("<select class='form-control' id='directions_to_misc' name='directions_to_misc' onchange='directionsToTypeChange()'>");
+			if(miscSelected === undefined) {
+				html.push("<option value='select_misc' selected='true'>Select Misc</option>");
+				getMarkerMapForType(GlobalStrings.MISC).forEach(function(markerId, marker){
+					html.push("<option value='"+markerId+"'>"+getMiscFromId(markerId)+"</option>");
+				});
+				html.push("</select>");
+			} else {
+				getMarkerMapForType(GlobalStrings.MISC).forEach(function(markerId, marker){
+					html.push("<option value='"+markerId+"'"+(miscSelected==markerId ? " selected='true'" : "")+">"+getMiscFromId(markerId)+"</option>");
+				});
+				html.push("</select>");
+			}
 		} else {
 			html.push("<option value='select_type'>Select Type</option>");
-			html.push(defaultDirectionsTypeHTML()); 
+			html.push(defaultDirectionsTypeHTML(null, true)); 
 			html.push("</select>");
 		}
 	}
@@ -877,7 +892,6 @@ function showDirectionsForStep(step) {
 		}
 		
 		var floor = getFloorFromId(pathMap.get(pathIds[pathIds.length-1]).marker2Data.id);
-		console.log("Current floor: " + currentFloor + " vs " + floor);
 		if(floor != "" && floor != currentFloor) {
 			currentFloor = floor;
 			showShapesForCurrentBuildingAndFloor();
@@ -1005,6 +1019,14 @@ function directionsFromParamsValid() {
 			if(directionsFromParkingLot == null) {
 				errorMsg = "You must select a parking lot";
 			}
+		} else if(directionsFromType == GlobalStrings.DORM) {
+			if(directionsFromDorm == null) {
+				errorMsg = "You must select a dorm";
+			}
+		} else if(directionsFromType == GlobalStrings.MISC) {
+			if(directionsFromMisc == null) {
+				errorMsg = "You must select a misc area";
+			}
 		} else {
 			LOG.error("Invalid directionsFromType: " + directionsFromType);
 		}
@@ -1039,6 +1061,14 @@ function directionsToParamsValid() {
 			// valid
 		} else if(directionsToType == GlobalStrings.CLOSEST_BATHROOM_WOMENS) {
 			// valid
+		} else if(directionsFromType == GlobalStrings.DORM) {
+			if(directionsFromDorm == null) {
+				errorMsg = "You must select a dorm";
+			}
+		} else if(directionsFromType == GlobalStrings.MISC) {
+			if(directionsFromMisc == null) {
+				errorMsg = "You must select a misc area";
+			}
 		} else {
 			LOG.error("Invalid directionsToType: " + directionsToType);
 		}
@@ -1051,12 +1081,16 @@ function directionsToParamsValid() {
 	return true;
 }
 
-function defaultDirectionsTypeHTML(selectedType) {
+function defaultDirectionsTypeHTML(selectedType, includeClosestBathroom) {
 	var html = [];
 	html.push("<option value='"+GlobalStrings.BUILDING+"' "+(selectedType == GlobalStrings.BUILDING ? "selected='true'" : "")+">"+GlobalStrings.BUILDING_DISPLAY+"</option>");
 	html.push("<option value='"+GlobalStrings.DORM+"' "+(selectedType == GlobalStrings.DORM ? "selected='true'" : "")+">"+GlobalStrings.DORM_DISPLAY+"</option>");
 	html.push("<option value='"+GlobalStrings.PARKING_LOT+"' "+(selectedType == GlobalStrings.PARKING_LOT ? "selected='true'" : "")+">"+GlobalStrings.PARKING_LOT_DISPLAY+"</option>");
 	html.push("<option value='"+GlobalStrings.MISC+"' "+(selectedType == GlobalStrings.MISC ? "selected='true'" : "")+">"+GlobalStrings.MISC_DISPLAY+"</option>");
+	if(includeClosestBathroom) {
+		html.push("<option value='"+GlobalStrings.CLOSEST_BATHROOM_MENS+"' "+(selectedType == GlobalStrings.CLOSEST_BATHROOM_MENS ? "selected='true'" : "")+">"+GlobalStrings.CLOSEST_BATHROOM_MENS_DISPLAY+"</option>");
+		html.push("<option value='"+GlobalStrings.CLOSEST_BATHROOM_WOMENS+"' "+(selectedType == GlobalStrings.CLOSEST_BATHROOM_WOMENS ? "selected='true'" : "")+">"+GlobalStrings.CLOSEST_BATHROOM_WOMENS_DISPLAY+"</option>");
+	}
 	return html.join("");
 }
 
@@ -1126,6 +1160,20 @@ function zoomInOnPaths(pathIds) {
 	var lowerLeftY = -999999;
 	for(var i = 0, len = pathIds.length; i < len; i++) {
 		var path = pathMap.get(pathIds[i]);
+		var tempPathObj = pathMap.get(pathIds[i]);
+		var marker1Data = tempPathObj.marker1Data;
+		var marker2Data = tempPathObj.marker2Data;
+		var marker1Floor = getFloorFromId(marker1Data.id);
+		var marker2Floor = getFloorFromId(marker2Data.id);
+		if((marker1Floor === marker2Floor && marker1Floor === currentFloor) || 
+				markerTypesToAlwaysShow.contains(marker1Data.type) || 
+				markerTypesToAlwaysShow.contains(marker2Data.type)) {
+			path.element.show();
+			path.element.toFront();
+		} else{
+			path.element.hide();
+		}
+			
 		var bbox = Raphael.pathBBox(path.element.attrs.path);
 		if(bbox.y2 > lowerLeftY) {
 			lowerLeftY = bbox.y2;

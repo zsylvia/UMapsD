@@ -46,7 +46,7 @@ var plottingBathroomWomens = 7;
 var plottingParkingLot = 8;
 var plottingDorm = 9;
 
-var markerSize = 4;
+var markerSize = 6;
 var pathStrokeWidth = 4;
 
 var manuallyConnectingMode = false;
@@ -79,6 +79,8 @@ var movingAllMarkers = false;
 var connectingFloors = false;
 
 var disposableMarkerText = new buckets.Dictionary();
+
+var buildingAndFloorChanged = false;
 
 var LOG = new Logger(LoggingLevel.ALL);
 
@@ -313,6 +315,19 @@ $(document).ready(function() {
 		
 		//Initally show room tool tip
 		roomSelected();
+		
+		// TODO: Code for automatically creating a room marker in all rooms that do not currently have a marker for it
+//		buildingToFloorMap.forEach(function(building, floorMap) {
+//			floorMap.get(currentFloor).get("shapes").forEach(function(shape) {
+//				var shapeId = shape.data(GlobalStrings.ID);
+//				if(idIsType(shapeId, GlobalStrings.ROOM) && !idIsType(shapeId, GlobalStrings.BATHROOM_MENS) && roomMap.get(shapeId) == null) {
+//					var bbox = Raphael.pathBBox(shape.attrs.path);
+//					var x = bbox.x + (bbox.width/2);
+//					var y = bbox.y + (bbox.height/2);
+//					plotRoom(x, y, building, currentFloor, shapeId);
+//				}
+//			});
+//		});
 
 		$("#plot_markers_popover").popover({
 			placement: "bottom",
@@ -519,7 +534,11 @@ function handleClick(ev, secondTry) {
 						marker = markerObj;
 						return false;
 					} else {
-						alertDialog("You cannot connect a marker to itself. Please select a marker to connect to or select \"Cancel Manual Connect\" button");
+						manuallyConnectingMarkerFrom = null;
+						markerObj.attr({
+							"stroke-opacity": 1,
+							"stroke-width": 1
+						});
 					}
 				}
 			});
@@ -604,7 +623,7 @@ function connectMarkerFrom(id) {
 	var totalMarkers = getTotalNumberOfMarkers();
 	if (totalMarkers > 1) {
 		manualConnect();
-		manuallyConnectingMode = false;
+		manuallyConnectingMode = true;
 		manuallyConnectingMarkerFrom = marker;
 		marker.attr({
 			"stroke-opacity": .5,

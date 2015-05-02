@@ -1,12 +1,12 @@
 var Directions = {
-		STRAIGHT: "Continue straight",
-		SLIGHT_LEFT: "Turn slightly left",
-		LEFT: "Turn left",
-		SHARP_LEFT: "Take a sharp left",
-		SLIGHT_RIGHT: "Turn slightly right",
-		RIGHT: "Turn right",
-		SHARP_RIGHT: "Take a sharp right",
-		UTURN: "Make a U-turn (This should never happen)"
+		STRAIGHT: "Continue straight ",
+		SLIGHT_LEFT: "Turn slightly left ",
+		LEFT: "Turn left ",
+		SHARP_LEFT: "Take a sharp left ",
+		SLIGHT_RIGHT: "Turn slightly right ",
+		RIGHT: "Turn right ",
+		SHARP_RIGHT: "Take a sharp right ",
+		UTURN: "Make a turn "
 }
 
 function findAngle2(p1,p2,p3){
@@ -104,42 +104,52 @@ function extractDirections(path){
 				//should sharp left and sharp right be adjusted so they're basically uturns?
 			}
 			
-			switch(getTypeFromId(names[1])){
+			switch(getTypeFromId(names[2])){
 				case GlobalStrings.ROOM:
-					addDirection((advanced?dir:"") + " through the room");
+					addDirection((advanced?dir:"") + "through the room");
 					break;
 				case GlobalStrings.DOOR:
 					if(i == last) {
-						addDirection((advanced?dir:"") + " through the door to " + getDisplayNameFromId(path[i]));
+						addDirection((advanced?dir:"") + "through the door to " + getDisplayNameFromId(path[i]));
 					} else {
-						addDirection((advanced?dir:"") + " through the door");
+						addDirection((advanced?dir:"") + "through the door");
 					}
 					break;
 				case GlobalStrings.HALLWAY:
-					addDirection((advanced?dir:"") + " down the hallway");
+					addDirection((advanced?dir:"") + "down the hallway");
 					break;
 				case GlobalStrings.PATHWAY:
-					addDirection((advanced?dir:"") + " down the pathway");
+					addDirection((advanced?dir:"") + "down the pathway");
 					break;
 				case GlobalStrings.STAIR:
-					var floorDiff = getFloorFromId(path[i-1]) - getFloorFromId(path[i]);
-					console.log(path[i-1] + " -> " + path[i]);
-					if(floorDiff < 0) {
-						addDirection((advanced?dir:"") + " down the stairs " + Math.abs(floorDiff) + " floors");
-					} else if(floorDiff > 0) {
-						addDirection((advanced?dir:"") + " up the stairs " + Math.abs(floorDiff) + " floors");
-					} else {
-						addDirection((advanced?dir:""));
+					tempNum = getFloorDifferenceFromId(path[i-2],path[i-1]);
+					if (tempNum > 0){
+						tempDir = "up "
+					} else if (tempNum < 0){
+						tempDir = "down "
+					} else if (tempNum == 0) {
+						addDirection("Proceed " + (advanced?dir:"") + "into the stairway");
+						break;
 					}
+					addDirection("Go " + tempDir + tempNum + " floor(s).");
 					break;
 				case GlobalStrings.ELEVATOR:
-					addDirection((advanced?dir:"") + " up/down the elevator");
+					tempNum = getFloorDifferenceFromId(path[i-2],path[i-1]);
+					if (tempNum > 0){
+						tempDir = "up "
+					} else if (tempNum < 0){
+						tempDir = "down "
+					} else if (tempNum == 0) {
+						addDirection("Proceed " + (advanced?dir:"") + "into the elevator");
+						break;
+					}
+					addDirection("Go " + tempDir + tempNum + " floor(s).");
 					break;
 				case GlobalStrings.BATHROOM_MENS:
-					addDirection((advanced?dir:"") + " down the [boysroom]");
+					addDirection((advanced?dir:"") + "into the " + GlobalStrings.BATHROOM_MENS_DISPLAY);
 					break;
 				case GlobalStrings.BATHROOM_WOMENS:
-					addDirection((advanced?dir:"") + " down the [girlsroom]");
+					addDirection((advanced?dir:"") + "into the " + GlobalStrings.BATHROOM_WOMENS_DISPLAY);
 					break;
 				default:
 					addDirection("Error computing this step of pathway.");
@@ -190,13 +200,14 @@ function extractDirections(path){
 			if(currentDirection != obj.direction) {
 				if(currentDirection.indexOf(Directions.SLIGHT_LEFT) != -1 && currPathIds.length > 1) {
 					currentDirection = currentDirection.replace(Directions.SLIGHT_LEFT, Directions.LEFT);
-				} else if(currentDirection.indexOf(Directions.SLIGHT_LEFT) != -1 && currPathIds.length > 1) {
+				} else if(currentDirection.indexOf(Directions.SLIGHT_RIGHT) != -1 && currPathIds.length > 1) {
 					currentDirection = currentDirection.replace(Directions.SLIGHT_RIGHT, Directions.RIGHT);
 				}
 				directionsToPathElementsMapConsolidated.push({direction: currentDirection, pathIds: currPathIds});
 				currPathIds = [];
 			}
 		}
+		//console.log(obj.pathIds);
 		for(var j = 0, idsLen = obj.pathIds.length; j < idsLen; j++) {
 			currPathIds.push(obj.pathIds[j]);
 		}

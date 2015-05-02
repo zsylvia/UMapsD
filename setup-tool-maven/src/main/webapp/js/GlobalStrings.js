@@ -48,7 +48,7 @@ var GlobalStrings = {
 	BATHROOM_MENS_ID: "brm",
 	BATHROOM_WOMENS_ID: "brw",
 	PARKING_LOT_ID: "lot",
-	DORM_ID: "drm",
+	DORM_ID: "dorm",
 	MISC_ID: "misc",
 	
 	COLOR: {

@@ -146,7 +146,7 @@ function createAllPathsFromJson(json, paper) {
 					if (!markerDataSet) {
 						if(path.m1.id == markerId){
 							var type = getTypeFromId(path.m1.id);
-							if (type == GlobalStrings.PATHWAY) {
+							if (type == GlobalStrings.PATHWAY || type == GlobalStrings.PARKING_LOT) {
 								markerData = new MarkerData(path.m1.x, path.m1.y, path.m1.id, type);
 							} else {
 								markerData = new MarkerData(path.m1.x, path.m1.y, path.m1.id, type, getBuildingFromId(path.m1.id), getFloorFromId(path.m1.id));
@@ -154,7 +154,7 @@ function createAllPathsFromJson(json, paper) {
 							markerDataSet = true;
 						} else if(path.m2.id == markerId) {
 							var type = getTypeFromId(path.m2.id);
-							if (type == GlobalStrings.PATHWAY) {
+							if (type == GlobalStrings.PATHWAY || type == GlobalStrings.PARKING_LOT) {
 								markerData = new MarkerData(path.m2.x, path.m2.y, path.m2.id, type);
 							} else {
 								markerData = new MarkerData(path.m2.x, path.m2.y, path.m2.id, type, getBuildingFromId(path.m2.id), getFloorFromId(path.m2.id));
